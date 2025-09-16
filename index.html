@@ -477,7 +477,6 @@ input[type="password"] {
   appId: "1:44533653921:web:07676dce93af9690136be0",
   measurementId: "G-ZFZG6MBV1X"
 };
-
     const app = initializeApp(firebaseConfig);
     const auth = getAuth();
     const db = getDatabase(app);
@@ -501,7 +500,7 @@ input[type="password"] {
     function log(msg){ const el=$('system-log'); el.innerText = (new Date()).toLocaleTimeString() + " — " + msg + "\n" + el.innerText; }
 
     // ---------------------------
-    // AUTH (Google)
+    // AUTH (Google - popup)
     // ---------------------------
     window.googleSignIn = async ()=>{
       try{
@@ -964,7 +963,7 @@ input[type="password"] {
       }
     }, 5000);
 
-    log("App loaded. Use Google Sign-In. Replace firebaseConfig with your keys if needed.");
+    log("App loaded. Use Google Sign-In (popup). Replace firebaseConfig placeholders with your project keys.");
   </script>
 </body>
 </html>
