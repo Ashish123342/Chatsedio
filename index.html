@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -36,7 +36,6 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:#111
       </div>
     </div>
 
-    <!-- Profile / Setup -->
     <div class="card" id="profile-card" style="display:none">
       <h3 class="h3">My Profile</h3>
       <div style="display:flex;gap:12px;align-items:center">
@@ -59,7 +58,6 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:#111
       </div>
     </div>
 
-    <!-- Auth card -->
     <div class="card" id="auth-card">
       <div id="setup-view">
         <h3 class="h3">Enter your display name</h3>
@@ -80,7 +78,6 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:#111
       </div>
     </div>
 
-    <!-- Requests -->
     <div class="card" id="requests-card" style="display:none">
       <h3 class="h3">Friend Requests</h3>
       <div id="requests-list"></div>
@@ -124,7 +121,6 @@ body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:#111
   </div>
 </div>
 
-<!-- Modal for incoming (placeholder) -->
 <div id="incoming-modal" class="modal" style="display:none">
   <h4 id="incoming-title">Incoming call</h4>
   <div style="margin-top:8px">
@@ -160,7 +156,7 @@ const db = getDatabase(app);
 let firebaseUser = null;   // firebase auth user
 let me = null;             // my profile { uid, name }
 let currentChatPeer = null; // uid of chat peer
-let currentChatListener = null;
+let currentChatUnsubscriber = null; // Unsubscribe function for the chat listener
 
 /* ====== Helpers ====== */
 const $ = id => document.getElementById(id);
@@ -353,35 +349,64 @@ function addContactUI(uid, name){
 }
 
 /* ====== Chat ====== */
-function chatIdFor(a,b){ return [a,b].sort().join('_'); }
+// Function to generate a unique chat ID for two users.
+// It ensures the same ID is generated regardless of the user order.
+function chatIdFor(a, b) {
+  return [a, b].sort().join('_');
+}
 
-function openChat(peerUid, peerName){
+function openChat(peerUid, peerName) {
+  // First, stop any existing chat listener to prevent duplicates.
+  if (currentChatUnsubscriber) {
+    currentChatUnsubscriber();
+    log("Stopped previous chat listener.");
+  }
+
   currentChatPeer = peerUid;
   $('chat-card').style.display = 'block';
   $('chat-title').innerText = 'Chat — ' + peerName;
   $('chat-uid').innerText = peerUid;
   $('chat-box').innerHTML = '';
-  // attach listener
+
   const id = chatIdFor(me.uid, peerUid);
   const node = ref(db, `chats/${id}`);
-  // remove previous listener by just ignoring duplicates (simple approach)
-  onChildAdded(node, snap => {
+
+  // Use onChildAdded to listen for new messages.
+  // Store the un-subscribe function in currentChatUnsubscriber.
+  currentChatUnsubscriber = onChildAdded(node, snap => {
     const m = snap.val();
-    if(!m) return;
+    if (!m) return;
+    
+    // Create the message element
     const el = document.createElement('div');
     el.className = 'message ' + (m.uid === me.uid ? 'me' : 'them');
     el.innerText = m.name + ': ' + m.text;
+    
+    // Append the message and scroll to the bottom
     $('chat-box').appendChild(el);
     $('chat-box').scrollTop = $('chat-box').scrollHeight;
   });
+
+  log(`Opened chat with ${peerName}`);
 }
 
 window.sendMessage = async () => {
   const txt = $('chat-input').value.trim();
-  if(!txt) return;
-  if(!currentChatPeer){ alert("Open a chat with a contact first"); return; }
+  if (!txt) return;
+  if (!currentChatPeer) {
+    alert("Open a chat with a contact first");
+    return;
+  }
+
   const id = chatIdFor(me.uid, currentChatPeer);
-  await push(ref(db, `chats/${id}`), { uid: me.uid, name: me.name, text: txt, ts: Date.now() });
+  // Use push() to add a new message with a unique key.
+  await push(ref(db, `chats/${id}`), { 
+    uid: me.uid, 
+    name: me.name, 
+    text: txt, 
+    ts: Date.now() 
+  });
+  
   $('chat-input').value = '';
 };
 
