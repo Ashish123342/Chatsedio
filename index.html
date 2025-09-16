@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>CallingApp — Single File (Google Sign-In + Voice)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8" />
+<title>CallingApp — Google Sign-In + Voice</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-  :root {
+:root {
   --primary: #666DC7;
   --primary-dark: #666DC7;
   --muted: linear-gradient(135deg, #eef2ff 0%, #f9fafb 100%);
@@ -13,957 +13,205 @@
   --card-blur: blur(8px);
   --danger: #ef4444;
   --success: #22c55e;
-  --shadow: 0 10px 36px rgba(31, 38, 135, 0.09);
+  --shadow: 0 10px 36px rgba(31,38,135,0.09);
   --radius: 12px;
   --font: 'Inter', Arial, Helvetica, sans-serif;
 }
-
 body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: var(--font);
+  margin:0; min-height:100vh; font-family: var(--font);
   background: var(--muted);
-  color: #111827;
-  letter-spacing: 0.01em;
-  -webkit-font-smoothing: antialiased;
-}
-
-#app-container {
-  max-width: 960px;
-  margin: 40px auto 0 auto;
-  display: flex;
-  gap: 22px;
-  padding: 14px;
-}
-
-.panel {
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 26px 22px;
-  flex: 1;
-  min-height: 640px;
-  backdrop-filter: var(--card-blur);
-  border: 1px solid #e5e7eb;
-  transition: box-shadow 0.3s ease, transform 0.15s ease;
-  overflow: visible;
-}
-.panel:hover {
-  box-shadow: 0 12px 40px rgba(37, 99, 235, 0.08);
-  transform: translateY(-2px);
-}
-
-header.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 22px;
-  position: relative;
-  z-index: 60;
-}
-
-h3 {
-  font-size: 16px;
-  letter-spacing: .04em;
-  margin: 0;
-  color: var(--primary-dark);
-  font-weight: 800;
-  text-shadow: 0 2px 16px #c7d2fe55;
-}
-
-button {
-  padding: 11px 24px;
-  border-radius: 14px;
-  border: 0;
-  min-width: 80px;
-  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: #fff;
-  font-weight: 700;
-  font-family: var(--font);
-  font-size: 10px;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
-  transition: all 0.15s ease-in-out;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transform: translateZ(0);
-  will-change: transform, box-shadow;
-}
-button:hover, button:active {
-  background: linear-gradient(100deg, var(--primary-dark) 20%, #4338ca 100%);
-  transform: translateY(-2px) scale(1.05);
-}
-button:not([disabled]):hover {
-  box-shadow:
-    0 3px 20px rgba(99, 102, 241, 0.22),
-    0 2px 10px rgba(37, 99, 235, 0.18);
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 13px 11px;
-  margin: 12px 0 20px;
-  border-radius: 10px;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  transition: all 0.2s;
-  font-size: 15px;
-  font-family: var(--font);
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--primary);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
-  outline: none;
-}
-
-.hidden { display: none !important; }
-
-.row, .flex { display: flex; gap: 12px; align-items: center; }
-.flex-col { display: flex; flex-direction: column; }
-
-/* ===== CONTACT CARDS ===== */
-.contact {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 14px;
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: rgba(248, 250, 255, 0.92);
-  box-shadow: 0 1px 8px rgba(147, 197, 253, 0.12);
-  transition: box-shadow 0.18s, border 0.2s, transform 0.12s;
-  overflow: visible;
-}
-.contact:hover {
-  border: 1.7px solid #6366f1;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.18);
-  transform: translateY(-2px);
-}
-
-.contact .meta {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.contact .actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  align-items: flex-end;
-  flex-shrink: 0;
-  margin-left: 12px;
 }
-
-.contact .actions button {
-  border-radius: 12px;
-  padding: 10px 18px;
-  min-width: 88px;
-  white-space: nowrap;
-  box-shadow: 0 6px 18px rgba(37,99,235,0.12);
-}
-
-/* UID / long text handling */
-.uid, .contact .uid-text {
-  display: block;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  hyphens: auto;
-  color: #6b7280;
-}
-.uid.clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.badge {
-  background: var(--danger);
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  margin-left: 8px;
-  vertical-align: middle;
-  box-shadow: 0 1px 5px rgba(239, 68, 68, 0.35);
-}
-
-/* ===== CHAT AREA ===== */
-.chat-area {
-  border: 1px solid #e5e7ef;
-  border-radius: 14px;
-  padding: 14px;
-  max-height: 430px;
-  overflow: auto;
-  background: #f3f6fc;
-  margin-bottom: 12px;
-}
-
-.message {
-  margin: 8px 0;
-  padding: 13px 18px;
-  border-radius: 15px;
-  max-width: 78%;
-  font-size: 16px;
-  line-height: 1.5;
-  box-shadow: 0 1px 7px rgba(96, 165, 250, 0.12);
-  transition: background 0.15s, transform 0.1s;
-}
-.me {
-  background: linear-gradient(90deg, #33C0FF, #33C0FF);
-  align-self: flex-end;
-  color: #fff;
-  font-weight: bold;
-  font-size:15px;
-}
-.them {
-  background: #fff;
-  align-self: flex-start;
-  font-weight :bold;
- font-size: 15px;
-}
-
-footer, .small {
-  margin-top: 16px;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.call-local, .call-remote {
-  width: 180px;
-  height: 135px;
-  background: #000;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 2px 16px rgba(219, 234, 254, 0.55);
-  border: 2.4px solid #c7d2fe;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
-}
-
-.danger {
-  background: #fff5f5;
-  border: 1.2px solid #fecaca;
-  color: var(--danger);
-  padding: 11px;
-  border-radius: 12px;
-  font-weight: 600;
-}
-
-::-webkit-scrollbar { width: 8px; background: #e5e7ef; }
-::-webkit-scrollbar-thumb { background: #a5b4fc; border-radius: 7px; }
-
-#main-left > div.flex > strong {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-
-#profile-card {
-  background: #fafafea6;
-  box-shadow: 0 2px 10px rgba(129, 140, 248, 0.15);
-  border-radius: 14px;
-  border: 1.5px solid rgba(165, 180, 252, 0.4);
+.panel {
+  background: var(--card-bg);
+  backdrop-filter: var(--card-blur);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
   padding: 16px;
-  font-size: 15px;
+  margin: 8px;
 }
-
-#profile-emoji {
-  font-size: 30px;
-  vertical-align: middle;
-}
-
-hr {
-  border: none;
-  border-top: 1.6px solid #e0e7ef;
-  margin: 22px 0;
-  opacity: 0.75;
-}
-
-input[type="password"] {
-  letter-spacing: 0.15em;
-}
-
-/* ===== Responsive & fallbacks ===== */
-@media (max-width: 820px) {
-  #app-container { flex-direction: column; max-width: 99vw; gap: 14px; }
-  .panel { min-height: 440px; padding: 16px 7vw; }
-  .contact .actions { flex-direction: row; gap: 8px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
-}
-
-/* fallback if backdrop-filter unsupported */
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .panel { background: rgba(255,255,255,0.97); --card-blur: none; }
-}
+.hidden { display: none !important; }
+.app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom:12px; }
+button { cursor:pointer; padding:8px 12px; border:none; border-radius:6px; background: var(--primary); color:#fff; }
+.small { font-size:0.85em; }
 </style>
 </head>
 <body>
-  <div id="app-container">
-    <!-- LEFT: Auth / Profile / Contacts -->
-    <div class="panel" style="flex:0.9; min-width:320px;">
-      <header class="app-header">
-        <h3>Tsedio</h3>
-        <div id="auth-controls">
-          <span id="user-display" class="small"></span>
-          <button id="btn-logout" class="hidden" onclick="logout()">Logout</button>
-        </div>
-      </header>
 
-      <!-- AUTH -->
-      <div id="auth-view">
-        <h3>Sign in</h3>
-        <div class="row">
-          <button onclick="googleSignIn()" style="min-width:200px">Sign in with Google</button>
-        </div>
-        <div id="auth-error" class="small" style="color:#c00"></div>
+<div id="app-container" style="display:flex; flex-direction:row; height:100vh;">
+  <!-- LEFT PANEL -->
+  <div class="panel" style="flex:0.9; min-width:300px;">
+    <header class="app-header">
+      <h3>Tsedio</h3>
+      <div id="auth-controls">
+        <span id="user-display" class="small"></span>
+        <button id="btn-logout" class="hidden" onclick="logout()">Logout</button>
       </div>
+    </header>
 
-      <!-- PROFILE SETUP -->
-      <div id="profile-setup" class="hidden">
-        <h3>Setup Profile</h3>
-        <div class="small">Choose a display name (this will be your public username) — emoji will be generated.</div>
-        <input id="profile-name" placeholder="Display name (like Ashish)">
-        <div class="row">
-          <button onclick="saveProfile()">Save Profile</button>
-        </div>
-        <div id="profile-error" class="small" style="color:#c00"></div>
+    <!-- LOGIN VIEW -->
+    <div id="auth-view">
+      <h3>Sign in</h3>
+      <div class="row">
+        <button onclick="googleSignIn()">Sign in with Google</button>
       </div>
-
-      <!-- MAIN LEFT -->
-      <div id="main-left" class="hidden">
-        <div class="flex" style="justify-content:space-between">
-          <strong>Contacts</strong>
-          <div>
-            <button onclick="openFind()">Add Friend</button>
-            <button onclick="openRequests()">Requests</button>
-          </div>
-        </div>
-
-        <div id="contacts-list" style="margin-top:12px;"></div>
-
-        <hr>
-
-        <div class="flex" style="justify-content:space-between; align-items:center;">
-          <strong>My Profile</strong>
-          <button onclick="openProfile()">Edit</button>
-        </div>
-
-        <div id="profile-card" style="margin-top:8px; padding:8px; border-radius:8px; border:1px solid #eee;">
-          <div><span id="profile-emoji" style="font-size:22px"></span> <strong id="profile-display"></strong></div>
-          <div class="small" id="profile-uid"></div>
-          <div class="small">Blocked: <span id="blocked-count">0</span></div>
-          <div style="margin-top:8px;"><button onclick="copyUID()">Copy UID</button></div>
-        </div>
-      </div>
-
-      <!-- FIND FRIEND / SEND REQUEST -->
-      <div id="find-view" class="hidden">
-        <h3>Add friend by UID</h3>
-        <div class="small">Enter recipient UID (from their profile)</div>
-        <input id="find-uid" placeholder="Paste UID">
-        <button onclick="sendFriendRequest()">Send Request</button>
-        <div id="find-msg" class="small"></div>
-      </div>
-
-      <!-- REQUESTS -->
-      <div id="requests-view" class="hidden">
-        <h3>Incoming Requests</h3>
-        <div id="requests-list"></div>
-      </div>
+      <div id="auth-error" class="small" style="color:#c00"></div>
     </div>
 
-    <!-- RIGHT: Chat / Calls -->
-    <div class="panel" style="flex:1.6;">
-      <!-- Chat header -->
-      <div id="chat-controls" class="hidden">
-        <div class="flex" style="justify-content:space-between;">
-          <div>
-            <strong id="chat-with">Select contact</strong><div class="small" id="chat-with-uid"></div>
-          </div>
-          <div>
-            <button onclick="startCall()">Call</button>
-            <button onclick="blockUser()" id="btn-block">Block</button>
-            <button onclick="unblockUser()" id="btn-unblock" class="hidden">Unblock</button>
-          </div>
-        </div>
-      </div>
+    <!-- PROFILE SETUP -->
+    <div id="profile-setup" class="hidden">
+      <h3>Set your profile</h3>
+      <input id="profile-name" placeholder="Your name" /><br><br>
+      <button onclick="saveProfile()">Save Profile</button>
+    </div>
 
-      <div id="chat-area" class="hidden">
-        <div class="chat-area flex-col" id="messages"></div>
-
-        <div style="margin-top:12px;" class="row">
-          <input id="message-input" placeholder="Type message...">
-          <button onclick="sendChatMessage()">Send</button>
-        </div>
-        <div class="small" id="unread-info"></div>
-      </div>
-
-      <!-- Calls UI (voice only) -->
-      <div id="webrtc-ui" class="hidden" style="margin-top:12px;">
-        <div class="flex" style="gap:12px;">
-          <div>
-            <div class="small">Local (mic)</div>
-            <div class="call-local">
-              <div id="local-audio-label">Mic active</div>
-              <audio id="localAudio" autoplay muted></audio>
-            </div>
-          </div>
-          <div>
-            <div class="small">Remote</div>
-            <div class="call-remote">
-              <div id="remote-audio-label">Remote audio</div>
-              <audio id="remoteAudio" autoplay></audio>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top:10px;">
-          <button id="end-call-btn" onclick="endCall()" class="danger">End Call</button>
-        </div>
-      </div>
-
-      <!-- Incoming call modal -->
-      <div id="incoming-call" class="hidden" style="margin-top:12px; padding:12px; border-radius:8px; border:1px solid #eee;">
-        <div class="flex" style="justify-content:space-between;">
-          <div>
-            <strong id="incoming-from"></strong>
-            <div class="small" id="incoming-uid"></div>
-          </div>
-          <div>
-            <button onclick="acceptIncoming()">Accept</button>
-            <button onclick="rejectIncoming()" class="danger">Reject</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="system-log" style="margin-top:12px;" class="small"></div>
+    <!-- MAIN LEFT (contacts, requests) -->
+    <div id="main-left" class="hidden">
+      <h4>Contacts / Friends</h4>
+      <div id="contacts-list"></div>
+      <h4>Friend Requests</h4>
+      <div id="requests-list"></div>
     </div>
   </div>
 
-  <!-- Firebase + App JS -->
-  <script type="module">
-    // ---------------------------
-    // Firebase Imports (modular)
-    // ---------------------------
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import {
-      getDatabase, ref, set, push, onChildAdded, onValue, remove, update, get, child
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  <!-- RIGHT PANEL -->
+  <div class="panel" style="flex:1.6;">
+    <div id="chat-controls" class="hidden">
+      <input id="chat-input" placeholder="Type message..." style="width:70%" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+    <div id="chat-area" class="hidden" style="margin-top:12px; height:70%; overflow:auto; border:1px solid #ccc; padding:8px;"></div>
+    <div id="webrtc-ui" class="hidden"> <!-- Call buttons/UI --></div>
+    <div id="incoming-call" class="hidden"></div>
+    <div id="system-log" style="margin-top:12px;" class="small"></div>
+  </div>
+</div>
 
-    // ---------------------------
-    // CONFIG - Replace with your keys
-    // ---------------------------
-    const firebaseConfig = {
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, set, get, child, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// Firebase config
+const firebaseConfig = {
   apiKey: "AIzaSyDTjjxt12p-0CMeey4EjKqiWAz9trGB0kQ",
   authDomain: "tsedio-a122c.firebaseapp.com",
   databaseURL: "https://tsedio-a122c-default-rtdb.firebaseio.com",
   projectId: "tsedio-a122c",
-  storageBucket: "tsedio-a122c.firebasestorage.app",
+  storageBucket: "tsedio-a122c.appspot.com",
   messagingSenderId: "44533653921",
   appId: "1:44533653921:web:07676dce93af9690136be0",
   measurementId: "G-ZFZG6MBV1X"
 };
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db = getDatabase(app);
-    const provider = new GoogleAuthProvider();
 
-    // ---------------------------
-    // Globals
-    // ---------------------------
-    let currentUser = null;
-    let myProfile = null;
-    let activeChatUid = null; // UID of currently selected contact
-    let localStream = null;
-    let pc = null;
-    let currentCallId = null;
-    const configuration = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getDatabase(app);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt:"select_account" });
 
-    // ---------------------------
-    // UI Helpers
-    // ---------------------------
-    const $ = id => document.getElementById(id);
-    function log(msg){ const el=$('system-log'); el.innerText = (new Date()).toLocaleTimeString() + " — " + msg + "\n" + el.innerText; }
+let currentUser = null;
+let myProfile = null;
 
-    // ---------------------------
-    // AUTH (Google - popup)
-    // ---------------------------
-    window.googleSignIn = async ()=>{
-      try{
-        await signInWithPopup(auth, provider);
-      }catch(e){
-        $('auth-error').innerText = e.message || e.toString();
-      }
-    };
+const $ = id => document.getElementById(id);
+function log(msg){ const el=$('system-log'); el.innerText = (new Date()).toLocaleTimeString()+" — "+msg+"\n"+el.innerText; }
 
-    window.logout = async ()=>{
-      await signOut(auth);
-      location.reload();
-    };
+// Google Sign-In (Redirect)
+window.googleSignIn = async ()=>{
+  try { await signInWithRedirect(auth, provider); }
+  catch(e){ $('auth-error').innerText = e.message || e.toString(); }
+};
 
-    // Auth state listener
-    onAuthStateChanged(auth, async user=>{
-      if (user){
-        currentUser = user;
-        $('user-display').innerText = (user.displayName || user.email || user.uid);
-        $('btn-logout').classList.remove('hidden');
-        $('auth-view').classList.add('hidden');
-        $('profile-setup').classList.add('hidden');
+// Handle redirect result
+getRedirectResult(auth).then(result=>{
+  if(result && result.user) log("Redirect login success: "+result.user.displayName);
+}).catch(e=>{ $('auth-error').innerText = e.message || e.toString(); });
 
-        // check profile in DB
-        const profSnap = await get(child(ref(db), `profiles/${user.uid}`));
-        if (!profSnap.exists()){
-          // show profile setup, prefill with Google name if available
-          $('profile-setup').classList.remove('hidden');
-          $('profile-name').value = user.displayName || '';
-        } else {
-          myProfile = profSnap.val();
-          initMainUI();
-        }
-      } else {
-        currentUser = null;
-        myProfile = null;
-        $('user-display').innerText = "";
-        $('btn-logout').classList.add('hidden');
-        $('auth-view').classList.remove('hidden');
-        $('main-left').classList.add('hidden');
-        $('chat-controls').classList.add('hidden');
-        $('chat-area').classList.add('hidden');
-      }
-    });
+// Logout
+window.logout = async ()=>{
+  await signOut(auth);
+  location.reload();
+};
 
-    // ---------------------------
-    // PROFILE
-    // ---------------------------
-    const EMOJIS = ["😄","😎","🤖","🔥","🌟","🎯","💡","🧠","🚀","🎵","🍀","🌈","🐾","🌻","⚡"];
-    function genEmoji(name){
-      if(!name) return EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
-      let s=0; for(let ch of name){ s+=ch.charCodeAt(0); } return EMOJIS[s % EMOJIS.length];
-    }
+// Auth listener
+onAuthStateChanged(auth, async user=>{
+  if(user){
+    currentUser=user;
+    $('user-display').innerText = user.displayName || user.email || user.uid;
+    $('btn-logout').classList.remove('hidden');
+    $('auth-view').classList.add('hidden');
 
-    window.saveProfile = async ()=>{
-      const name = $('profile-name').value.trim();
-      if (!name) { $('profile-error').innerText = "Enter a display name"; return; }
-      $('profile-error').innerText = "";
-      const profile = { displayName: name, emoji: genEmoji(name), createdAt: Date.now(), blocked: {} };
-      await set(ref(db, `profiles/${currentUser.uid}`), profile);
-      myProfile = profile;
-      initMainUI();
-    };
-
-    function openProfile(){
+    const profSnap = await get(child(ref(db), `profiles/${user.uid}`));
+    if(!profSnap.exists()){
       $('profile-setup').classList.remove('hidden');
-      $('profile-name').value = myProfile.displayName || "";
+      $('profile-name').value = user.displayName || '';
+    } else {
+      myProfile = profSnap.val();
+      initMainUI();
     }
+  } else {
+    currentUser=null; myProfile=null;
+    $('user-display').innerText="";
+    $('btn-logout').classList.add('hidden');
+    $('auth-view').classList.remove('hidden');
+    $('main-left').classList.add('hidden');
+    $('chat-controls').classList.add('hidden');
+    $('chat-area').classList.add('hidden');
+  }
+});
 
-    function copyUID(){
-      navigator.clipboard?.writeText(currentUser.uid);
-      alert("UID copied: " + currentUser.uid);
+// Save profile
+window.saveProfile = async ()=>{
+  if(!currentUser) return;
+  const name = $('profile-name').value.trim();
+  if(!name) return alert("Enter a name");
+  await set(ref(db, `profiles/${currentUser.uid}`), { name });
+  myProfile = { name };
+  $('profile-setup').classList.add('hidden');
+  initMainUI();
+};
+
+// Init main UI
+function initMainUI(){
+  $('main-left').classList.remove('hidden');
+  $('chat-controls').classList.remove('hidden');
+  $('chat-area').classList.remove('hidden');
+  attachContactsListener();
+}
+
+// Contacts listener (demo)
+function attachContactsListener(){
+  const contactsRef = ref(db, 'profiles');
+  onChildAdded(contactsRef, snap=>{
+    const data = snap.val();
+    if(snap.key !== currentUser.uid){
+      const el = document.createElement('div');
+      el.innerText = data.name || snap.key;
+      $('contacts-list').appendChild(el);
     }
+  });
+}
 
-    // ---------------------------
-    // MAIN UI INIT
-    // ---------------------------
-    function initMainUI(){
-      $('profile-setup').classList.add('hidden');
-      $('auth-view').classList.add('hidden');
-      $('main-left').classList.remove('hidden');
-      $('chat-controls').classList.remove('hidden');
-      $('chat-area').classList.add('hidden'); // show when contact selected
-      updateProfileCard();
-      attachContactsListener();
-      attachRequestsListener();
-      attachIncomingCallListener();
-      log("Initialized main UI");
-    }
+// Chat message
+window.sendMessage = async ()=>{
+  const msg = $('chat-input').value.trim();
+  if(!msg) return;
+  const chatRef = ref(db, 'chats');
+  await push(chatRef, { uid:currentUser.uid, name:myProfile.name, text:msg, ts:Date.now() });
+  $('chat-input').value="";
+};
 
-    function updateProfileCard(){
-      $('profile-emoji').innerText = myProfile.emoji || "🙂";
-      $('profile-display').innerText = myProfile.displayName || currentUser.displayName || currentUser.email;
-      $('profile-uid').innerText = "UID: " + currentUser.uid;
-      $('blocked-count').innerText = Object.keys(myProfile.blocked || {}).length;
-    }
+// Listen chat messages
+const chatRef = ref(db, 'chats');
+onChildAdded(chatRef, snap=>{
+  const data = snap.val();
+  const el = document.createElement('div');
+  el.innerText = `${data.name}: ${data.text}`;
+  $('chat-area').appendChild(el);
+  $('chat-area').scrollTop = $('chat-area').scrollHeight;
+});
 
-    // ---------------------------
-    // FRIEND REQUESTS & CONTACTS
-    // ---------------------------
-    function attachRequestsListener(){
-      const reqRef = ref(db, `requests/${currentUser.uid}`);
-      $('requests-list').innerHTML = "";
-      onChildAdded(reqRef, snap=>{
-        const data = snap.val();
-        const pushId = snap.key;
-        const el = document.createElement('div');
-        el.className = 'contact';
-        el.innerHTML = `<div><strong>${data.fromName || data.fromEmail}</strong><div class="small">${data.fromUid}</div></div>
-                        <div class="row">
-                          <button onclick="acceptRequest('${pushId}','${data.fromUid}','${data.fromName || data.fromEmail}')">Accept</button>
-                          <button onclick="rejectRequest('${pushId}')">Reject</button>
-                        </div>`;
-        $('requests-list').appendChild(el);
-      });
-    }
-
-    window.openRequests = ()=> {
-      $('requests-view').classList.toggle('hidden');
-      $('find-view').classList.add('hidden');
-    }
-
-    window.openFind = ()=> {
-      $('find-view').classList.toggle('hidden');
-      $('requests-view').classList.add('hidden');
-      $('find-msg').innerText="";
-    }
-
-    window.sendFriendRequest = async ()=>{
-      const targetUid = $('find-uid').value.trim();
-      if (!targetUid){ $('find-msg').innerText="Enter UID"; return; }
-      if (targetUid === currentUser.uid){ $('find-msg').innerText="You can't add yourself."; return; }
-      const payload = { fromUid: currentUser.uid, fromEmail: currentUser.email || currentUser.uid, fromName: myProfile.displayName || currentUser.displayName || currentUser.email, timestamp: Date.now() };
-      await push(ref(db, `requests/${targetUid}`), payload);
-      $('find-msg').innerText = "Request sent.";
-    };
-
-    window.acceptRequest = async (pushId, fromUid, fromName) => {
-      await set(ref(db, `contacts/${currentUser.uid}/${fromUid}`), { uid: fromUid, name: fromName, since: Date.now() });
-      await set(ref(db, `contacts/${fromUid}/${currentUser.uid}`), { uid: currentUser.uid, name: myProfile.displayName || currentUser.displayName || currentUser.email, since: Date.now() });
-      await remove(ref(db, `requests/${currentUser.uid}/${pushId}`));
-      log("Accepted friend: " + fromUid);
-    };
-
-    window.rejectRequest = async (pushId) => {
-      await remove(ref(db, `requests/${currentUser.uid}/${pushId}`));
-      log("Rejected request");
-    };
-
-    function attachContactsListener(){
-      const cRef = ref(db, `contacts/${currentUser.uid}`);
-      const container = $('contacts-list');
-      container.innerHTML = "<div class='small'>Loading contacts...</div>";
-      onValue(cRef, snap=>{
-        container.innerHTML = "";
-        if (!snap.exists()){ container.innerHTML = "<div class='small'>No contacts</div>"; return; }
-        snap.forEach(childSnap=>{
-          const c = childSnap.val();
-          const uid = childSnap.key;
-          if (myProfile.blocked && myProfile.blocked[uid]) return;
-          const el = document.createElement('div');
-          el.className = 'contact';
-          el.innerHTML = `<div>
-                            <div style="font-weight:600;">${c.name || uid} <span class="small">(${uid===currentUser.uid?'me':''})</span></div>
-                            <div class="small">${new Date(c.since).toLocaleDateString()}</div>
-                          </div>
-                          <div style="display:flex; flex-direction:column; gap:6px;">
-                            <button onclick="openChat('${uid}','${(c.name||'')}')">Chat</button>
-                            <button onclick="startCall('${uid}')" style="background:#10b981">Call</button>
-                          </div>`;
-          container.appendChild(el);
-        });
-      });
-    }
-
-    // ---------------------------
-    // CHAT
-    // ---------------------------
-    function chatIdFor(a,b){ return (a<b) ? `${a}_${b}` : `${b}_${a}`; }
-
-    window.openChat = async (uid, name) => {
-      activeChatUid = uid;
-      $('chat-controls').classList.remove('hidden');
-      $('chat-area').classList.remove('hidden');
-      $('chat-with').innerText = name || uid;
-      $('chat-with-uid').innerText = uid;
-      $('messages').innerHTML = "";
-      $('unread-info').innerText = "";
-      $('incoming-call').classList.add('hidden');
-
-      const blocked = myProfile.blocked || {};
-      if (blocked[uid]) {
-        $('btn-block').classList.add('hidden');
-        $('btn-unblock').classList.remove('hidden');
-        $('message-input').disabled = true;
-      } else {
-        $('btn-block').classList.remove('hidden');
-        $('btn-unblock').classList.add('hidden');
-        $('message-input').disabled = false;
-      }
-
-      const id = chatIdFor(currentUser.uid, uid);
-      const msgsRef = ref(db, `messages/${id}`);
-      onValue(msgsRef, snap=>{
-        $('messages').innerHTML = "";
-        if (!snap.exists()) return;
-        snap.forEach(child=>{
-          const m = child.val();
-          const div = document.createElement('div');
-          div.className = 'message ' + ((m.senderUid===currentUser.uid) ? 'me' : 'them');
-          div.innerText = ` ${m.text}`;
-          $('messages').appendChild(div);
-        });
-        $('messages').scrollTop = $('messages').scrollHeight;
-      });
-
-      const myUnreadRef = ref(db, `unread/${id}/${currentUser.uid}`);
-      set(myUnreadRef, 0);
-    };
-
-    window.sendChatMessage = async ()=>{
-      if (!activeChatUid) { alert("Select a contact"); return; }
-      const text = $('message-input').value.trim();
-      if (!text) return;
-      if (myProfile.blocked && myProfile.blocked[activeChatUid]) { alert("Unblock to send"); return; }
-
-      const id = chatIdFor(currentUser.uid, activeChatUid);
-      const payload = { text, senderUid: currentUser.uid, senderEmail: currentUser.email || currentUser.uid, senderName: myProfile.displayName || currentUser.displayName || currentUser.email, ts: Date.now() };
-      await push(ref(db, `messages/${id}`), payload);
-      const otherUnreadRef = ref(db, `unread/${id}/${activeChatUid}`);
-      const snap = await get(otherUnreadRef);
-      const val = snap.exists() ? (snap.val() || 0) : 0;
-      set(otherUnreadRef, val + 1);
-      $('message-input').value = "";
-    };
-
-    const attachUnreadListener = () => {
-      const myContactsRef = ref(db, `contacts/${currentUser.uid}`);
-      onValue(myContactsRef, snap=>{
-        const container = $('contacts-list');
-        setTimeout(async ()=>{
-          const nodes = container.querySelectorAll('.contact');
-          snap.forEach(async cSnap => {
-            const otherUid = cSnap.key;
-            const id = chatIdFor(currentUser.uid, otherUid);
-            const unreadSnap = await get(ref(db, `unread/${id}/${currentUser.uid}`));
-            const n = unreadSnap.exists() ? (unreadSnap.val() || 0) : 0;
-            nodes.forEach(node=>{
-              if (node.innerText.includes(otherUid) || node.innerText.includes(cSnap.val().name)){
-                let bad = node.querySelector('.badge');
-                if (!bad && n>0){
-                  bad = document.createElement('span'); bad.className='badge'; bad.innerText = n;
-                  node.querySelector('div').appendChild(bad);
-                } else if (bad){
-                  if (n>0) bad.innerText = n; else bad.remove();
-                }
-              }
-            });
-          });
-        }, 200);
-      });
-    };
-
-    setInterval(()=>{ if (currentUser) attachUnreadListener(); }, 5000);
-
-    // ---------------------------
-    // BLOCK / UNBLOCK
-    // ---------------------------
-    window.blockUser = async ()=>{
-      if (!activeChatUid) return;
-      myProfile.blocked = myProfile.blocked || {};
-      myProfile.blocked[activeChatUid] = Date.now();
-      await update(ref(db, `profiles/${currentUser.uid}`), { blocked: myProfile.blocked });
-      updateProfileCard();
-      $('btn-block').classList.add('hidden');
-      $('btn-unblock').classList.remove('hidden');
-      $('message-input').disabled = true;
-      log("Blocked " + activeChatUid);
-    };
-
-    window.unblockUser = async ()=>{
-      if (!activeChatUid) return;
-      myProfile.blocked = myProfile.blocked || {};
-      delete myProfile.blocked[activeChatUid];
-      await update(ref(db, `profiles/${currentUser.uid}`), { blocked: myProfile.blocked });
-      updateProfileCard();
-      $('btn-block').classList.remove('hidden');
-      $('btn-unblock').classList.add('hidden');
-      $('message-input').disabled = false;
-      log("Unblocked " + activeChatUid);
-    };
-
-    // ---------------------------
-    // WEBRTC CALLING (Voice only)
-    // ---------------------------
-    function attachIncomingCallListener(){
-      const callsRef = ref(db, `calls`);
-      onChildAdded(callsRef, async snap=>{
-        const c = snap.val();
-        const id = snap.key;
-        if (c && c.calleeUid === currentUser.uid && c.status === 'offer'){
-          $('incoming-from').innerText = c.callerName || c.callerUid;
-          $('incoming-uid').innerText = c.callerUid;
-          $('incoming-call').classList.remove('hidden');
-          currentCallId = id;
-          log("Incoming call from " + c.callerUid);
-        }
-      });
-    }
-
-    window.startCall = async (targetUid) => {
-      if (!targetUid) targetUid = activeChatUid;
-      if (!targetUid) { alert("Select contact to call"); return; }
-      if (myProfile.blocked && myProfile.blocked[targetUid]) { alert("Cannot call blocked user"); return; }
-
-      const callRef = push(ref(db, 'calls'));
-      const callId = callRef.key;
-      currentCallId = callId;
-
-      // voice-only
-      localStream = await navigator.mediaDevices.getUserMedia({ audio:true }).catch(e=>{ alert("Microphone permission needed"); throw e; });
-      $('localAudio').srcObject = localStream;
-      $('webrtc-ui').classList.remove('hidden');
-
-      pc = new RTCPeerConnection(configuration);
-      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-      pc.ontrack = event => { $('remoteAudio').srcObject = event.streams[0]; };
-
-      const callerCandidatesRef = ref(db, `calls/${callId}/callerCandidates`);
-      pc.onicecandidate = event => {
-        if (event.candidate){
-          push(callerCandidatesRef, event.candidate.toJSON());
-        }
-      };
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      await set(callRef, {
-        callerUid: currentUser.uid,
-        callerName: myProfile.displayName || currentUser.displayName || currentUser.email,
-        calleeUid: targetUid,
-        status: 'offer',
-        sdp: offer.sdp,
-        createdAt: Date.now()
-      });
-
-      log("Call offer sent to " + targetUid);
-
-      const callSnapRef = ref(db, `calls/${callId}`);
-      onValue(callSnapRef, async snap=>{
-        const val = snap.val();
-        if (!val) return;
-        if (val.status === 'answered' && val.answerSdp){
-          const remoteDesc = { type: 'answer', sdp: val.answerSdp };
-          await pc.setRemoteDescription(remoteDesc);
-          log("Remote description set (answer)");
-        }
-      });
-
-      const calleeCandidatesRef = ref(db, `calls/${callId}/calleeCandidates`);
-      onChildAdded(calleeCandidatesRef, snap=>{
-        const cand = snap.val();
-        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
-      });
-    };
-
-    window.acceptIncoming = async ()=>{
-      if (!currentCallId) return;
-      $('incoming-call').classList.add('hidden');
-
-      const callRef = ref(db, `calls/${currentCallId}`);
-      const callSnap = await get(callRef);
-      if (!callSnap.exists()) { log("Call no longer exists"); return; }
-      const callData = callSnap.val();
-
-      localStream = await navigator.mediaDevices.getUserMedia({ audio:true }).catch(e=>{ alert("Allow microphone"); throw e; });
-      $('localAudio').srcObject = localStream;
-      $('webrtc-ui').classList.remove('hidden');
-
-      pc = new RTCPeerConnection(configuration);
-      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-      pc.ontrack = event => { $('remoteAudio').srcObject = event.streams[0]; };
-
-      const calleeCandidatesRef = ref(db, `calls/${currentCallId}/calleeCandidates`);
-      pc.onicecandidate = event => {
-        if (event.candidate) push(calleeCandidatesRef, event.candidate.toJSON());
-      };
-
-      const offerDesc = { type:'offer', sdp: callData.sdp };
-      await pc.setRemoteDescription(offerDesc);
-
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      await update(callRef, { answerSdp: answer.sdp, status: 'answered' });
-
-      const callerCandidatesRef = ref(db, `calls/${currentCallId}/callerCandidates`);
-      onChildAdded(callerCandidatesRef, snap=>{
-        const cand = snap.val();
-        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
-      });
-
-      log("Answered call " + currentCallId);
-    };
-
-    window.rejectIncoming = async ()=>{
-      if (!currentCallId) return;
-      await update(ref(db, `calls/${currentCallId}`), { status: 'rejected' });
-      $('incoming-call').classList.add('hidden');
-      log("Call rejected");
-      currentCallId = null;
-    };
-
-    window.endCall = async ()=>{
-      if (!currentCallId) return;
-      await update(ref(db, `calls/${currentCallId}`), { status: 'ended' });
-      cleanupCall();
-      log("Call ended");
-    };
-
-    async function cleanupCall(){
-      try{
-        if (pc){ pc.close(); pc = null; }
-        if (localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream = null; }
-        $('webrtc-ui').classList.add('hidden');
-        $('localAudio').srcObject = null;
-        $('remoteAudio').srcObject = null;
-        currentCallId = null;
-      } catch(e){ console.warn(e); }
-    }
-
-    const monitorCallsForCleanup = () => {
-      const callsRef = ref(db, 'calls');
-      onChildAdded(callsRef, snap=>{
-        const id = snap.key;
-        onValue(ref(db, `calls/${id}/status`), snap2=>{
-          const s = snap2.val();
-          if (s === 'ended' || s === 'rejected'){
-            if (currentCallId === id){
-              cleanupCall();
-              log("Remote ended/rejected call");
-            }
-          }
-        });
-      });
-    };
-    monitorCallsForCleanup();
-
-    // ---------------------------
-    // Misc utilities & heartbeat
-    // ---------------------------
-    function uidShort(u){ return u ? u.substr(0,6) : ''; }
-    setInterval(async ()=>{
-      if (!currentUser) return;
-      const snap = await get(ref(db, `profiles/${currentUser.uid}`));
-      if (snap.exists()){
-        myProfile = snap.val();
-        updateProfileCard();
-      }
-    }, 5000);
-
-    log("App loaded. Use Google Sign-In (popup). Replace firebaseConfig placeholders with your project keys.");
-  </script>
+</script>
 </body>
 </html>
