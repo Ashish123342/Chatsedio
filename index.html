@@ -6,15 +6,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   :root {
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
+  --primary: #666DC7;
+  --primary-dark: #666DC7;
   --muted: linear-gradient(135deg, #eef2ff 0%, #f9fafb 100%);
   --card-bg: rgba(255,255,255,0.88);
   --card-blur: blur(8px);
   --danger: #ef4444;
   --success: #22c55e;
   --shadow: 0 10px 36px rgba(31, 38, 135, 0.09);
-  --radius: 18px;
+  --radius: 12px;
   --font: 'Inter', Arial, Helvetica, sans-serif;
 }
 
@@ -75,12 +75,12 @@ button {
   padding: 11px 24px;
   border-radius: 14px;
   border: 0;
-  min-width: 100px;
+  min-width: 80px;
   background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: #fff;
   font-weight: 700;
   font-family: var(--font);
-  font-size: 15px;
+  font-size: 10px;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
   transition: all 0.15s ease-in-out;
@@ -218,13 +218,17 @@ input:focus, select:focus, textarea:focus {
   transition: background 0.15s, transform 0.1s;
 }
 .me {
-  background: linear-gradient(90deg, #dbeafe, #fee2e2);
+  background: linear-gradient(90deg, #33C0FF, #33C0FF);
   align-self: flex-end;
-  color: #1f2937;
+  color: #fff;
+  font-weight: bold;
+  font-size:15px;
 }
 .them {
-  background: #f9fafb;
+  background: #fff;
   align-self: flex-start;
+  font-weight :bold;
+ font-size: 15px;
 }
 
 footer, .small {
@@ -318,7 +322,7 @@ input[type="password"] {
       <!-- AUTH -->
       <div id="auth-view">
         <h3>Login</h3>
-        <input id="login-email" placeholder="Email">
+        <input type="email" id="login-email" placeholder="Email">
         <input id="login-pass" type="password" placeholder="Password">
         <div class="row">
           <button onclick="login()">Login</button>
@@ -741,7 +745,7 @@ input[type="password"] {
           const m = child.val();
           const div = document.createElement('div');
           div.className = 'message ' + ((m.senderUid===currentUser.uid) ? 'me' : 'them');
-          div.innerText = `${m.senderName || m.senderEmail}: ${m.text}`;
+          div.innerText = ` ${m.text}`;
           $('messages').appendChild(div);
         });
         // scroll
