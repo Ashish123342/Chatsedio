@@ -1,970 +1,952 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>CallingApp — Single File (Google Sign-In + Voice)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8" />
+<title>Tsedio — Voice Calling App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  :root {
+:root {
   --primary: #666DC7;
-  --primary-dark: #666DC7;
-  --muted: linear-gradient(135deg, #eef2ff 0%, #f9fafb 100%);
-  --card-bg: rgba(255,255,255,0.88);
-  --card-blur: blur(8px);
+  --primary-dark: #565BC7;
+  --primary-light: #E0E2F5;
+  --secondary: #FF7D50;
+  --muted-bg: linear-gradient(135deg, #eef2ff 0%, #f9fafb 100%);
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-blur: blur(10px);
   --danger: #ef4444;
   --success: #22c55e;
-  --shadow: 0 10px 36px rgba(31, 38, 135, 0.09);
+  --warning: #f59e0b;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --shadow: 0 4px 20px rgba(31, 38, 135, 0.15);
+  --shadow-lg: 0 10px 36px rgba(31, 38, 135, 0.2);
   --radius: 12px;
-  --font: 'Inter', Arial, Helvetica, sans-serif;
+  --radius-sm: 8px;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--font);
-  background: var(--muted);
-  color: #111827;
-  letter-spacing: 0.01em;
-  -webkit-font-smoothing: antialiased;
-}
-
-#app-container {
-  max-width: 960px;
-  margin: 40px auto 0 auto;
-  display: flex;
-  gap: 22px;
-  padding: 14px;
-}
-
-.panel {
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 26px 22px;
-  flex: 1;
-  min-height: 640px;
-  backdrop-filter: var(--card-blur);
-  border: 1px solid #e5e7eb;
-  transition: box-shadow 0.3s ease, transform 0.15s ease;
-  overflow: visible;
-}
-.panel:hover {
-  box-shadow: 0 12px 40px rgba(37, 99, 235, 0.08);
-  transform: translateY(-2px);
-}
-
-header.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 22px;
-  position: relative;
-  z-index: 60;
-}
-
-h3 {
-  font-size: 16px;
-  letter-spacing: .04em;
-  margin: 0;
-  color: var(--primary-dark);
-  font-weight: 800;
-  text-shadow: 0 2px 16px #c7d2fe55;
-}
-
-button {
-  padding: 11px 24px;
-  border-radius: 14px;
-  border: 0;
-  min-width: 80px;
-  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: #fff;
-  font-weight: 700;
-  font-family: var(--font);
-  font-size: 10px;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
-  transition: all 0.15s ease-in-out;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transform: translateZ(0);
-  will-change: transform, box-shadow;
-}
-button:hover, button:active {
-  background: linear-gradient(100deg, var(--primary-dark) 20%, #4338ca 100%);
-  transform: translateY(-2px) scale(1.05);
-}
-button:not([disabled]):hover {
-  box-shadow:
-    0 3px 20px rgba(99, 102, 241, 0.22),
-    0 2px 10px rgba(37, 99, 235, 0.18);
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 13px 11px;
-  margin: 12px 0 20px;
-  border-radius: 10px;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  transition: all 0.2s;
-  font-size: 15px;
-  font-family: var(--font);
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--primary);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
-  outline: none;
-}
-
-.hidden { display: none !important; }
-
-.row, .flex { display: flex; gap: 12px; align-items: center; }
-.flex-col { display: flex; flex-direction: column; }
-
-/* ===== CONTACT CARDS ===== */
-.contact {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 14px;
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: rgba(248, 250, 255, 0.92);
-  box-shadow: 0 1px 8px rgba(147, 197, 253, 0.12);
-  transition: box-shadow 0.18s, border 0.2s, transform 0.12s;
-  overflow: visible;
-}
-.contact:hover {
-  border: 1.7px solid #6366f1;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.18);
-  transform: translateY(-2px);
-}
-
-.contact .meta {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.contact .actions {
+  background: var(--muted-bg);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  align-items: flex-end;
-  flex-shrink: 0;
-  margin-left: 12px;
+  color: var(--gray-800);
+  font-weight: 400;
 }
 
-.contact .actions button {
-  border-radius: 12px;
-  padding: 10px 18px;
-  min-width: 88px;
-  white-space: nowrap;
-  box-shadow: 0 6px 18px rgba(37,99,235,0.12);
+.app-container {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  padding: 16px;
+  gap: 16px;
 }
 
-/* UID / long text handling */
-.uid, .contact .uid-text {
-  display: block;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  hyphens: auto;
-  color: #6b7280;
-}
-.uid.clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+/* Panel Styling */
+.panel {
+  background: var(--card-bg);
+  backdrop-filter: var(--card-blur);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
-.badge {
-  background: var(--danger);
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  margin-left: 8px;
-  vertical-align: middle;
-  box-shadow: 0 1px 5px rgba(239, 68, 68, 0.35);
+.left-panel {
+  flex: 0.9;
+  min-width: 300px;
+  max-width: 380px;
 }
 
-/* ===== CHAT AREA ===== */
-.chat-area {
-  border: 1px solid #e5e7ef;
-  border-radius: 14px;
-  padding: 14px;
-  max-height: 430px;
-  overflow: auto;
-  background: #f3f6fc;
+.right-panel {
+  flex: 1.6;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.app-header h3 {
+  margin: 0;
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 1.5rem;
+}
+
+#user-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: white;
+}
+
+.btn-secondary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  opacity: 0.9;
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-success:hover {
+  opacity: 0.9;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--gray-300);
+  color: var(--gray-600);
+}
+
+.btn-outline:hover {
+  background: var(--gray-100);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.btn-icon {
+  padding: 8px;
+}
+
+/* Inputs */
+input, textarea {
+  padding: 10px 14px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  width: 100%;
+  transition: border 0.2s ease;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(102, 109, 199, 0.2);
+}
+
+/* Lists */
+.contacts-section, .requests-section {
+  margin-bottom: 24px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
+}
+
+.section-header h4 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--gray-800);
+  font-size: 1.1rem;
+}
+
+.contact-list, .request-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.contact-item, .request-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--gray-100);
+  transition: background 0.2s ease;
+}
+
+.contact-item:hover, .request-item:hover {
+  background: var(--gray-200);
+}
+
+.contact-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  font-weight: 600;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.contact-info {
+  flex: 1;
+}
+
+.contact-name {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.contact-status {
+  font-size: 0.8rem;
+  color: var(--gray-600);
+}
+
+.status-online {
+  color: var(--success);
+}
+
+.status-offline {
+  color: var(--gray-600);
+}
+
+.contact-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Chat Area */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.current-chat {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.chat-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--gray-100);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .message {
-  margin: 8px 0;
-  padding: 13px 18px;
-  border-radius: 15px;
-  max-width: 78%;
-  font-size: 16px;
-  line-height: 1.5;
-  box-shadow: 0 1px 7px rgba(96, 165, 250, 0.12);
-  transition: background 0.15s, transform 0.1s;
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  position: relative;
+  line-height: 1.4;
 }
-.me {
-  background: linear-gradient(90deg, #33C0FF, #33C0FF);
-  align-self: flex-end;
-  color: #fff;
-  font-weight: bold;
-  font-size:15px;
-}
-.them {
-  background: #fff;
+
+.message-incoming {
   align-self: flex-start;
-  font-weight :bold;
- font-size: 15px;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-bottom-left-radius: 4px;
 }
 
-footer, .small {
+.message-outgoing {
+  align-self: flex-end;
+  background: var(--primary-light);
+  border-bottom-right-radius: 4px;
+}
+
+.message-sender {
+  font-weight: 500;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  color: var(--gray-600);
+}
+
+.message-time {
+  font-size: 0.7rem;
+  color: var(--gray-600);
+  text-align: right;
+  margin-top: 4px;
+}
+
+.chat-controls {
+  display: flex;
+  gap: 12px;
+}
+
+#chat-input {
+  flex: 1;
+}
+
+/* Call UI */
+.webrtc-ui {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--gray-100);
+  border-radius: var(--radius);
   margin-top: 16px;
-  font-size: 13px;
-  color: #6b7280;
 }
 
-.call-local, .call-remote {
-  width: 180px;
-  height: 135px;
-  background: #000;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 2px 16px rgba(219, 234, 254, 0.55);
-  border: 2.4px solid #c7d2fe;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
+.call-controls {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
 }
 
-.danger {
-  background: #fff5f5;
-  border: 1.2px solid #fecaca;
-  color: var(--danger);
-  padding: 11px;
-  border-radius: 12px;
+.call-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.call-info {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.call-timer {
+  font-size: 2rem;
   font-weight: 600;
+  margin: 10px 0;
 }
 
-::-webkit-scrollbar { width: 8px; background: #e5e7ef; }
-::-webkit-scrollbar-thumb { background: #a5b4fc; border-radius: 7px; }
-
-#main-left > div.flex > strong {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+.incoming-call {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  text-align: center;
+  min-width: 300px;
 }
 
-#profile-card {
-  background: #fafafea6;
-  box-shadow: 0 2px 10px rgba(129, 140, 248, 0.15);
-  border-radius: 14px;
-  border: 1.5px solid rgba(165, 180, 252, 0.4);
-  padding: 16px;
-  font-size: 15px;
+.caller-info {
+  margin-bottom: 20px;
 }
 
-#profile-emoji {
-  font-size: 30px;
-  vertical-align: middle;
+.call-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
 }
 
-hr {
-  border: none;
-  border-top: 1.6px solid #e0e7ef;
-  margin: 22px 0;
-  opacity: 0.75;
+/* Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
 }
 
-input[type="password"] {
-  letter-spacing: 0.15em;
+/* Utility Classes */
+.hidden { 
+  display: none !important; 
 }
 
-/* ===== Responsive & fallbacks ===== */
-@media (max-width: 820px) {
-  #app-container { flex-direction: column; max-width: 99vw; gap: 14px; }
-  .panel { min-height: 440px; padding: 16px 7vw; }
-  .contact .actions { flex-direction: row; gap: 8px; }
+.small { 
+  font-size: 0.85em; 
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+.text-center {
+  text-align: center;
 }
 
-/* fallback if backdrop-filter unsupported */
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .panel { background: rgba(255,255,255,0.97); --card-blur: none; }
+.muted {
+  color: var(--gray-600);
+}
+
+.divider {
+  height: 1px;
+  background: var(--gray-200);
+  margin: 16px 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+    padding: 8px;
+  }
+  
+  .left-panel, .right-panel {
+    max-width: 100%;
+    flex: 1;
+  }
+  
+  .message {
+    max-width: 85%;
+  }
 }
 </style>
 </head>
 <body>
-  <div id="app-container">
-    <!-- LEFT: Auth / Profile / Contacts -->
-    <div class="panel" style="flex:0.9; min-width:320px;">
-      <header class="app-header">
-        <h3>Tsedio</h3>
-        <div id="auth-controls">
-          <span id="user-display" class="small"></span>
-          <button id="btn-logout" class="hidden" onclick="logout()">Logout</button>
-        </div>
-      </header>
 
-      <!-- AUTH -->
-      <div id="auth-view">
-        <h3>Sign in</h3>
-        <div class="row">
-          <button onclick="googleSignIn()" style="min-width:200px">Sign in with Google</button>
-        </div>
-        <div id="auth-error" class="small" style="color:#c00"></div>
+<div class="app-container">
+  <!-- LEFT PANEL -->
+  <div class="panel left-panel">
+    <header class="app-header">
+      <h3><i class="fas fa-phone-alt"></i> Tsedio</h3>
+      <div id="auth-controls">
+        <span id="user-display" class="small"></span>
+        <button id="btn-logout" class="hidden btn-outline btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
       </div>
+    </header>
 
-      <!-- PROFILE SETUP -->
-      <div id="profile-setup" class="hidden">
-        <h3>Setup Profile</h3>
-        <div class="small">Choose a display name (this will be your public username) — emoji will be generated.</div>
-        <input id="profile-name" placeholder="Display name (like Ashish)">
-        <div class="row">
-          <button onclick="saveProfile()">Save Profile</button>
+    <!-- LOGIN VIEW -->
+    <div id="auth-view">
+      <div class="text-center">
+        <div style="font-size: 3rem; color: var(--primary); margin-bottom: 16px;">
+          <i class="fas fa-phone-alt"></i>
         </div>
-        <div id="profile-error" class="small" style="color:#c00"></div>
+        <h2>Welcome to Tsedio</h2>
+        <p class="muted">Sign in to start making voice calls</p>
       </div>
-
-      <!-- MAIN LEFT -->
-      <div id="main-left" class="hidden">
-        <div class="flex" style="justify-content:space-between">
-          <strong>Contacts</strong>
-          <div>
-            <button onclick="openFind()">Add Friend</button>
-            <button onclick="openRequests()">Requests</button>
-          </div>
-        </div>
-
-        <div id="contacts-list" style="margin-top:12px;"></div>
-
-        <hr>
-
-        <div class="flex" style="justify-content:space-between; align-items:center;">
-          <strong>My Profile</strong>
-          <button onclick="openProfile()">Edit</button>
-        </div>
-
-        <div id="profile-card" style="margin-top:8px; padding:8px; border-radius:8px; border:1px solid #eee;">
-          <div><span id="profile-emoji" style="font-size:22px"></span> <strong id="profile-display"></strong></div>
-          <div class="small" id="profile-uid"></div>
-          <div class="small">Blocked: <span id="blocked-count">0</span></div>
-          <div style="margin-top:8px;"><button onclick="copyUID()">Copy UID</button></div>
-        </div>
+      
+      <div class="divider"></div>
+      
+      <div class="row" style="text-align: center;">
+        <button class="btn-primary" onclick="googleSignIn()" style="width: 100%; justify-content: center;">
+          <i class="fab fa-google"></i> Sign in with Google
+        </button>
       </div>
-
-      <!-- FIND FRIEND / SEND REQUEST -->
-      <div id="find-view" class="hidden">
-        <h3>Add friend by UID</h3>
-        <div class="small">Enter recipient UID (from their profile)</div>
-        <input id="find-uid" placeholder="Paste UID">
-        <button onclick="sendFriendRequest()">Send Request</button>
-        <div id="find-msg" class="small"></div>
-      </div>
-
-      <!-- REQUESTS -->
-      <div id="requests-view" class="hidden">
-        <h3>Incoming Requests</h3>
-        <div id="requests-list"></div>
-      </div>
+      <div id="auth-error" class="small" style="color: var(--danger); margin-top: 12px;"></div>
     </div>
 
-    <!-- RIGHT: Chat / Calls -->
-    <div class="panel" style="flex:1.6;">
-      <!-- Chat header -->
-      <div id="chat-controls" class="hidden">
-        <div class="flex" style="justify-content:space-between;">
-          <div>
-            <strong id="chat-with">Select contact</strong><div class="small" id="chat-with-uid"></div>
-          </div>
-          <div>
-            <button onclick="startCall()">Call</button>
-            <button onclick="blockUser()" id="btn-block">Block</button>
-            <button onclick="unblockUser()" id="btn-unblock" class="hidden">Unblock</button>
-          </div>
-        </div>
+    <!-- PROFILE SETUP -->
+    <div id="profile-setup" class="hidden">
+      <h3>Set up your profile</h3>
+      <p class="muted">Complete your profile to get started</p>
+      
+      <div style="margin: 20px 0;">
+        <label for="profile-name">Display Name</label>
+        <input id="profile-name" placeholder="Your name" />
       </div>
+      
+      <button class="btn-primary" onclick="saveProfile()" style="width: 100%;">
+        <i class="fas fa-save"></i> Save Profile
+      </button>
+    </div>
 
-      <div id="chat-area" class="hidden">
-        <div class="chat-area flex-col" id="messages"></div>
-
-        <div style="margin-top:12px;" class="row">
-          <input id="message-input" placeholder="Type message...">
-          <button onclick="sendChatMessage()">Send</button>
+    <!-- MAIN LEFT (contacts, requests) -->
+    <div id="main-left" class="hidden">
+      <div class="contacts-section">
+        <div class="section-header">
+          <h4>Contacts</h4>
+          <button class="btn-icon btn-outline btn-sm"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="small" id="unread-info"></div>
+        <div id="contacts-list" class="contact-list"></div>
       </div>
-
-      <!-- Calls UI (voice only) -->
-      <div id="webrtc-ui" class="hidden" style="margin-top:12px;">
-        <div class="flex" style="gap:12px;">
-          <div>
-            <div class="small">Local (mic)</div>
-            <div class="call-local">
-              <div id="local-audio-label">Mic active</div>
-              <audio id="localAudio" autoplay muted></audio>
-            </div>
-          </div>
-          <div>
-            <div class="small">Remote</div>
-            <div class="call-remote">
-              <div id="remote-audio-label">Remote audio</div>
-              <audio id="remoteAudio" autoplay></audio>
-            </div>
-          </div>
+      
+      <div class="requests-section">
+        <div class="section-header">
+          <h4>Friend Requests</h4>
         </div>
-        <div style="margin-top:10px;">
-          <button id="end-call-btn" onclick="endCall()" class="danger">End Call</button>
-        </div>
+        <div id="requests-list" class="request-list"></div>
       </div>
-
-      <!-- Incoming call modal -->
-      <div id="incoming-call" class="hidden" style="margin-top:12px; padding:12px; border-radius:8px; border:1px solid #eee;">
-        <div class="flex" style="justify-content:space-between;">
-          <div>
-            <strong id="incoming-from"></strong>
-            <div class="small" id="incoming-uid"></div>
-          </div>
-          <div>
-            <button onclick="acceptIncoming()">Accept</button>
-            <button onclick="rejectIncoming()" class="danger">Reject</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="system-log" style="margin-top:12px;" class="small"></div>
     </div>
   </div>
 
-  <!-- Firebase + App JS -->
-  <script type="module">
-    // ---------------------------
-    // Firebase Imports (modular)
-    // ---------------------------
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import {
-      getDatabase, ref, set, push, onChildAdded, onValue, remove, update, get, child
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  <!-- RIGHT PANEL -->
+  <div class="panel right-panel">
+    <div id="chat-header" class="chat-header hidden">
+      <div class="current-chat">Select a contact to start chatting</div>
+    </div>
+    
+    <div id="chat-area" class="chat-area hidden"></div>
+    
+    <div id="chat-controls" class="chat-controls hidden">
+      <input id="chat-input" placeholder="Type a message..." />
+      <button class="btn-primary" onclick="sendMessage()"><i class="fas fa-paper-plane"></i> Send</button>
+    </div>
+    
+    <div id="webrtc-ui" class="webrtc-ui hidden">
+      <div class="call-info">
+        <div id="call-status">Call in progress</div>
+        <div id="call-timer" class="call-timer">00:00</div>
+        <div id="call-with">With John Doe</div>
+      </div>
+      <div class="call-controls">
+        <button class="call-button btn-danger" onclick="endCall()">
+          <i class="fas fa-phone-slash"></i>
+        </button>
+        <button class="call-button btn-secondary" onclick="toggleMute()">
+          <i class="fas fa-microphone"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div id="incoming-call" class="incoming-call hidden">
+      <div class="caller-info">
+        <div class="avatar" style="width: 60px; height: 60px; margin: 0 auto 16px;">
+          <i class="fas fa-user" style="font-size: 1.5rem;"></i>
+        </div>
+        <h3>Incoming Call</h3>
+        <p id="caller-name">John Doe</p>
+      </div>
+      <div class="call-actions">
+        <button class="call-button btn-success" onclick="acceptCall()">
+          <i class="fas fa-phone"></i>
+        </button>
+        <button class="call-button btn-danger" onclick="rejectCall()">
+          <i class="fas fa-phone-slash"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div id="system-log" style="margin-top:12px;" class="small"></div>
+  </div>
+</div>
 
-    // ---------------------------
-    // CONFIG - Replace with your keys
-    // ---------------------------
-    const firebaseConfig = {
+<div id="overlay" class="overlay hidden"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, set, get, child, push, onChildAdded, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// Firebase config
+const firebaseConfig = {
   apiKey: "AIzaSyDTjjxt12p-0CMeey4EjKqiWAz9trGB0kQ",
   authDomain: "tsedio-a122c.firebaseapp.com",
   databaseURL: "https://tsedio-a122c-default-rtdb.firebaseio.com",
   projectId: "tsedio-a122c",
-  storageBucket: "tsedio-a122c.firebasestorage.app",
+  storageBucket: "tsedio-a122c.appspot.com",
   messagingSenderId: "44533653921",
   appId: "1:44533653921:web:07676dce93af9690136be0",
   measurementId: "G-ZFZG6MBV1X"
 };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db = getDatabase(app);
-    const provider = new GoogleAuthProvider();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getDatabase(app);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt:"select_account" });
 
-    // ---------------------------
-    // Globals
-    // ---------------------------
-    let currentUser = null;
-    let myProfile = null;
-    let activeChatUid = null; // UID of currently selected contact
-    let localStream = null;
-    let pc = null;
-    let currentCallId = null;
-    const configuration = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+let currentUser = null;
+let myProfile = null;
+let selectedContact = null;
+let callTimer = null;
+let callStartTime = null;
 
-    // ---------------------------
-    // UI Helpers
-    // ---------------------------
-    const $ = id => document.getElementById(id);
-    function log(msg){ const el=$('system-log'); el.innerText = (new Date()).toLocaleTimeString() + " — " + msg + "\n" + el.innerText; }
+const $ = id => document.getElementById(id);
+function log(msg){ const el=$('system-log'); el.innerText = (new Date()).toLocaleTimeString()+" — "+msg+"\n"+el.innerText; }
 
-    // ---------------------------
-    // AUTH (Google)
-    // ---------------------------
-    window.googleSignIn = async ()=>{
-      try{
-        await signInWithPopup(auth, provider);
-      }catch(e){
-        $('auth-error').innerText = e.message || e.toString();
-      }
-    };
+// Google Sign-In (Redirect)
+window.googleSignIn = async ()=>{
+  try { 
+    await signInWithRedirect(auth, provider); 
+  }
+  catch(e){ 
+    $('auth-error').innerText = e.message || e.toString(); 
+  }
+};
 
-    window.logout = async ()=>{
-      await signOut(auth);
-      location.reload();
-    };
+// Handle redirect result
+getRedirectResult(auth).then(result=>{
+  if(result && result.user) log("Redirect login success: "+result.user.displayName);
+}).catch(e=>{ 
+  $('auth-error').innerText = e.message || e.toString(); 
+});
 
-    // Auth state listener
-    onAuthStateChanged(auth, async user=>{
-      if (user){
-        currentUser = user;
-        $('user-display').innerText = (user.displayName || user.email || user.uid);
-        $('btn-logout').classList.remove('hidden');
-        $('auth-view').classList.add('hidden');
-        $('profile-setup').classList.add('hidden');
+// Logout
+window.logout = async ()=>{
+  await signOut(auth);
+  location.reload();
+};
 
-        // check profile in DB
-        const profSnap = await get(child(ref(db), `profiles/${user.uid}`));
-        if (!profSnap.exists()){
-          // show profile setup, prefill with Google name if available
-          $('profile-setup').classList.remove('hidden');
-          $('profile-name').value = user.displayName || '';
-        } else {
-          myProfile = profSnap.val();
-          initMainUI();
-        }
-      } else {
-        currentUser = null;
-        myProfile = null;
-        $('user-display').innerText = "";
-        $('btn-logout').classList.add('hidden');
-        $('auth-view').classList.remove('hidden');
-        $('main-left').classList.add('hidden');
-        $('chat-controls').classList.add('hidden');
-        $('chat-area').classList.add('hidden');
-      }
-    });
+// Auth listener
+onAuthStateChanged(auth, async user=>{
+  if(user){
+    currentUser=user;
+    $('user-display').innerHTML = `<div class="avatar">${user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}</div> ${user.displayName || user.email}`;
+    $('btn-logout').classList.remove('hidden');
+    $('auth-view').classList.add('hidden');
 
-    // ---------------------------
-    // PROFILE
-    // ---------------------------
-    const EMOJIS = ["😄","😎","🤖","🔥","🌟","🎯","💡","🧠","🚀","🎵","🍀","🌈","🐾","🌻","⚡"];
-    function genEmoji(name){
-      if(!name) return EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
-      let s=0; for(let ch of name){ s+=ch.charCodeAt(0); } return EMOJIS[s % EMOJIS.length];
-    }
-
-    window.saveProfile = async ()=>{
-      const name = $('profile-name').value.trim();
-      if (!name) { $('profile-error').innerText = "Enter a display name"; return; }
-      $('profile-error').innerText = "";
-      const profile = { displayName: name, emoji: genEmoji(name), createdAt: Date.now(), blocked: {} };
-      await set(ref(db, `profiles/${currentUser.uid}`), profile);
-      myProfile = profile;
-      initMainUI();
-    };
-
-    function openProfile(){
+    const profSnap = await get(child(ref(db), `profiles/${user.uid}`));
+    if(!profSnap.exists()){
       $('profile-setup').classList.remove('hidden');
-      $('profile-name').value = myProfile.displayName || "";
+      $('profile-name').value = user.displayName || '';
+    } else {
+      myProfile = profSnap.val();
+      initMainUI();
     }
+  } else {
+    currentUser=null; myProfile=null;
+    $('user-display').innerText="";
+    $('btn-logout').classList.add('hidden');
+    $('auth-view').classList.remove('hidden');
+    $('main-left').classList.add('hidden');
+    $('chat-controls').classList.add('hidden');
+    $('chat-area').classList.add('hidden');
+    $('chat-header').classList.add('hidden');
+    $('profile-setup').classList.add('hidden');
+  }
+});
 
-    function copyUID(){
-      navigator.clipboard?.writeText(currentUser.uid);
-      alert("UID copied: " + currentUser.uid);
+// Save profile
+window.saveProfile = async ()=>{
+  if(!currentUser) return;
+  const name = $('profile-name').value.trim();
+  if(!name) return alert("Enter a name");
+  await set(ref(db, `profiles/${currentUser.uid}`), { 
+    name,
+    email: currentUser.email,
+    createdAt: Date.now()
+  });
+  myProfile = { name };
+  $('profile-setup').classList.add('hidden');
+  initMainUI();
+};
+
+// Init main UI
+function initMainUI(){
+  $('main-left').classList.remove('hidden');
+  $('chat-controls').classList.remove('hidden');
+  $('chat-area').classList.remove('hidden');
+  $('chat-header').classList.remove('hidden');
+  attachContactsListener();
+  setupCallListeners();
+}
+
+// Contacts listener
+function attachContactsListener(){
+  const contactsRef = ref(db, 'profiles');
+  onChildAdded(contactsRef, snap=>{
+    const data = snap.val();
+    if(snap.key !== currentUser.uid){
+      const contactItem = document.createElement('div');
+      contactItem.className = 'contact-item';
+      contactItem.innerHTML = `
+        <div class="contact-avatar">${data.name ? data.name.charAt(0).toUpperCase() : 'U'}</div>
+        <div class="contact-info">
+          <div class="contact-name">${data.name || 'Unknown User'}</div>
+          <div class="contact-status status-online">Online</div>
+        </div>
+        <div class="contact-actions">
+          <button class="btn-icon btn-outline btn-sm" onclick="startCall('${snap.key}')">
+            <i class="fas fa-phone"></i>
+          </button>
+          <button class="btn-icon btn-outline btn-sm" onclick="selectContact('${snap.key}', '${data.name}')">
+            <i class="fas fa-comment"></i>
+          </button>
+        </div>
+      `;
+      contactItem.dataset.uid = snap.key;
+      $('contacts-list').appendChild(contactItem);
     }
+  });
+}
 
-    // ---------------------------
-    // MAIN UI INIT
-    // ---------------------------
-    function initMainUI(){
-      $('profile-setup').classList.add('hidden');
-      $('auth-view').classList.add('hidden');
-      $('main-left').classList.remove('hidden');
-      $('chat-controls').classList.remove('hidden');
-      $('chat-area').classList.add('hidden'); // show when contact selected
-      updateProfileCard();
-      attachContactsListener();
-      attachRequestsListener();
-      attachIncomingCallListener();
-      log("Initialized main UI");
+// Select contact for chat
+window.selectContact = (uid, name) => {
+  selectedContact = { uid, name };
+  $('chat-header').querySelector('.current-chat').textContent = `Chat with ${name}`;
+  $('chat-area').innerHTML = '';
+  loadChatMessages(uid);
+};
+
+// Load chat messages
+function loadChatMessages(contactId) {
+  const chatId = [currentUser.uid, contactId].sort().join('_');
+  const messagesRef = ref(db, `chats/${chatId}/messages`);
+  
+  onChildAdded(messagesRef, snap => {
+    const data = snap.val();
+    addMessageToChat(data, data.uid === currentUser.uid);
+  });
+}
+
+// Add message to chat UI
+function addMessageToChat(message, isOutgoing = false) {
+  const messageEl = document.createElement('div');
+  messageEl.className = `message ${isOutgoing ? 'message-outgoing' : 'message-incoming'}`;
+  
+  const time = new Date(message.ts).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  
+  messageEl.innerHTML = `
+    ${!isOutgoing ? `<div class="message-sender">${message.name}</div>` : ''}
+    <div>${message.text}</div>
+    <div class="message-time">${time}</div>
+  `;
+  
+  $('chat-area').appendChild(messageEl);
+  $('chat-area').scrollTop = $('chat-area').scrollHeight;
+}
+
+// Send message
+window.sendMessage = async ()=>{
+  if (!selectedContact) {
+    alert("Please select a contact first");
+    return;
+  }
+  
+  const msg = $('chat-input').value.trim();
+  if(!msg) return;
+  
+  const chatId = [currentUser.uid, selectedContact.uid].sort().join('_');
+  const messagesRef = ref(db, `chats/${chatId}/messages`);
+  
+  await push(messagesRef, { 
+    uid: currentUser.uid, 
+    name: myProfile.name, 
+    text: msg, 
+    ts: Date.now() 
+  });
+  
+  $('chat-input').value = "";
+};
+
+// Setup call listeners
+function setupCallListeners() {
+  // Listen for incoming calls
+  const callsRef = ref(db, `calls/${currentUser.uid}`);
+  onValue(callsRef, (snap) => {
+    const callData = snap.val();
+    if (callData && callData.status === 'ringing') {
+      showIncomingCall(callData);
     }
+  });
+}
 
-    function updateProfileCard(){
-      $('profile-emoji').innerText = myProfile.emoji || "🙂";
-      $('profile-display').innerText = myProfile.displayName || currentUser.displayName || currentUser.email;
-      $('profile-uid').innerText = "UID: " + currentUser.uid;
-      $('blocked-count').innerText = Object.keys(myProfile.blocked || {}).length;
+// Show incoming call UI
+function showIncomingCall(callData) {
+  $('#caller-name').textContent = callData.callerName || 'Unknown';
+  $('#incoming-call').classList.remove('hidden');
+  $('#overlay').classList.remove('hidden');
+}
+
+// Start a call
+window.startCall = (contactId) => {
+  log(`Starting call with ${contactId}`);
+  // In a real app, this would set up WebRTC and send call invitation
+  $('#webrtc-ui').classList.remove('hidden');
+  startCallTimer();
+};
+
+// Accept incoming call
+window.acceptCall = () => {
+  log('Call accepted');
+  $('#incoming-call').classList.add('hidden');
+  $('#overlay').classList.add('hidden');
+  $('#webrtc-ui').classList.remove('hidden');
+  startCallTimer();
+};
+
+// Reject incoming call
+window.rejectCall = () => {
+  log('Call rejected');
+  $('#incoming-call').classList.add('hidden');
+  $('#overlay').classList.add('hidden');
+};
+
+// End current call
+window.endCall = () => {
+  log('Call ended');
+  $('#webrtc-ui').classList.add('hidden');
+  stopCallTimer();
+};
+
+// Toggle microphone mute
+window.toggleMute = () => {
+  log('Microphone toggled');
+  // This would toggle audio track in a real app
+};
+
+// Start call timer
+function startCallTimer() {
+  callStartTime = new Date();
+  callTimer = setInterval(() => {
+    const now = new Date();
+    const diff = now - callStartTime;
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    $('#call-timer').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }, 1000);
+}
+
+// Stop call timer
+function stopCallTimer() {
+  if (callTimer) {
+    clearInterval(callTimer);
+    callTimer = null;
+  }
+  $('#call-timer').textContent = '00:00';
+}
+
+// Initialize with some demo contacts if none exist
+setTimeout(() => {
+  if ($('contacts-list').children.length === 0 && currentUser) {
+    // Add some demo contacts
+    const demoContacts = [
+      { id: 'demo1', name: 'Alex Johnson' },
+      { id: 'demo2', name: 'Maria Garcia' },
+      { id: 'demo3', name: 'David Smith' }
+    ];
+    
+    demoContacts.forEach(contact => {
+      const contactItem = document.createElement('div');
+      contactItem.className = 'contact-item';
+      contactItem.innerHTML = `
+        <div class="contact-avatar">${contact.name.charAt(0)}</div>
+        <div class="contact-info">
+          <div class="contact-name">${contact.name}</div>
+          <div class="contact-status status-online">Online</div>
+        </div>
+        <div class="contact-actions">
+          <button class="btn-icon btn-outline btn-sm" onclick="startCall('${contact.id}')">
+            <i class="fas fa-phone"></i>
+          </button>
+          <button class="btn-icon btn-outline btn-sm" onclick="selectContact('${contact.id}', '${contact.name}')">
+            <i class="fas fa-comment"></i>
+          </button>
+        </div>
+      `;
+      contactItem.dataset.uid = contact.id;
+      $('contacts-list').appendChild(contactItem);
+    });
+    
+    // Add some demo messages if chat is empty
+    if ($('chat-area').children.length === 0) {
+      const demoMessages = [
+        { text: 'Hey there! Welcome to Tsedio.', outgoing: false, time: '10:30 AM', sender: 'Alex Johnson' },
+        { text: 'Thanks! This looks great.', outgoing: true, time: '10:32 AM' },
+        { text: 'You can make voice calls by clicking the phone icon.', outgoing: false, time: '10:33 AM', sender: 'Alex Johnson' }
+      ];
+      
+      demoMessages.forEach(msg => {
+        const messageEl = document.createElement('div');
+        messageEl.className = `message ${msg.outgoing ? 'message-outgoing' : 'message-incoming'}`;
+        
+        messageEl.innerHTML = `
+          ${!msg.outgoing ? `<div class="message-sender">${msg.sender}</div>` : ''}
+          <div>${msg.text}</div>
+          <div class="message-time">${msg.time}</div>
+        `;
+        
+        $('chat-area').appendChild(messageEl);
+      });
+      
+      $('chat-area').scrollTop = $('chat-area').scrollHeight;
     }
+  }
+}, 1000);
 
-    // ---------------------------
-    // FRIEND REQUESTS & CONTACTS
-    // ---------------------------
-    function attachRequestsListener(){
-      const reqRef = ref(db, `requests/${currentUser.uid}`);
-      $('requests-list').innerHTML = "";
-      onChildAdded(reqRef, snap=>{
-        const data = snap.val();
-        const pushId = snap.key;
-        const el = document.createElement('div');
-        el.className = 'contact';
-        el.innerHTML = `<div><strong>${data.fromName || data.fromEmail}</strong><div class="small">${data.fromUid}</div></div>
-                        <div class="row">
-                          <button onclick="acceptRequest('${pushId}','${data.fromUid}','${data.fromName || data.fromEmail}')">Accept</button>
-                          <button onclick="rejectRequest('${pushId}')">Reject</button>
-                        </div>`;
-        $('requests-list').appendChild(el);
-      });
-    }
-
-    window.openRequests = ()=> {
-      $('requests-view').classList.toggle('hidden');
-      $('find-view').classList.add('hidden');
-    }
-
-    window.openFind = ()=> {
-      $('find-view').classList.toggle('hidden');
-      $('requests-view').classList.add('hidden');
-      $('find-msg').innerText="";
-    }
-
-    window.sendFriendRequest = async ()=>{
-      const targetUid = $('find-uid').value.trim();
-      if (!targetUid){ $('find-msg').innerText="Enter UID"; return; }
-      if (targetUid === currentUser.uid){ $('find-msg').innerText="You can't add yourself."; return; }
-      const payload = { fromUid: currentUser.uid, fromEmail: currentUser.email || currentUser.uid, fromName: myProfile.displayName || currentUser.displayName || currentUser.email, timestamp: Date.now() };
-      await push(ref(db, `requests/${targetUid}`), payload);
-      $('find-msg').innerText = "Request sent.";
-    };
-
-    window.acceptRequest = async (pushId, fromUid, fromName) => {
-      await set(ref(db, `contacts/${currentUser.uid}/${fromUid}`), { uid: fromUid, name: fromName, since: Date.now() });
-      await set(ref(db, `contacts/${fromUid}/${currentUser.uid}`), { uid: currentUser.uid, name: myProfile.displayName || currentUser.displayName || currentUser.email, since: Date.now() });
-      await remove(ref(db, `requests/${currentUser.uid}/${pushId}`));
-      log("Accepted friend: " + fromUid);
-    };
-
-    window.rejectRequest = async (pushId) => {
-      await remove(ref(db, `requests/${currentUser.uid}/${pushId}`));
-      log("Rejected request");
-    };
-
-    function attachContactsListener(){
-      const cRef = ref(db, `contacts/${currentUser.uid}`);
-      const container = $('contacts-list');
-      container.innerHTML = "<div class='small'>Loading contacts...</div>";
-      onValue(cRef, snap=>{
-        container.innerHTML = "";
-        if (!snap.exists()){ container.innerHTML = "<div class='small'>No contacts</div>"; return; }
-        snap.forEach(childSnap=>{
-          const c = childSnap.val();
-          const uid = childSnap.key;
-          if (myProfile.blocked && myProfile.blocked[uid]) return;
-          const el = document.createElement('div');
-          el.className = 'contact';
-          el.innerHTML = `<div>
-                            <div style="font-weight:600;">${c.name || uid} <span class="small">(${uid===currentUser.uid?'me':''})</span></div>
-                            <div class="small">${new Date(c.since).toLocaleDateString()}</div>
-                          </div>
-                          <div style="display:flex; flex-direction:column; gap:6px;">
-                            <button onclick="openChat('${uid}','${(c.name||'')}')">Chat</button>
-                            <button onclick="startCall('${uid}')" style="background:#10b981">Call</button>
-                          </div>`;
-          container.appendChild(el);
-        });
-      });
-    }
-
-    // ---------------------------
-    // CHAT
-    // ---------------------------
-    function chatIdFor(a,b){ return (a<b) ? `${a}_${b}` : `${b}_${a}`; }
-
-    window.openChat = async (uid, name) => {
-      activeChatUid = uid;
-      $('chat-controls').classList.remove('hidden');
-      $('chat-area').classList.remove('hidden');
-      $('chat-with').innerText = name || uid;
-      $('chat-with-uid').innerText = uid;
-      $('messages').innerHTML = "";
-      $('unread-info').innerText = "";
-      $('incoming-call').classList.add('hidden');
-
-      const blocked = myProfile.blocked || {};
-      if (blocked[uid]) {
-        $('btn-block').classList.add('hidden');
-        $('btn-unblock').classList.remove('hidden');
-        $('message-input').disabled = true;
-      } else {
-        $('btn-block').classList.remove('hidden');
-        $('btn-unblock').classList.add('hidden');
-        $('message-input').disabled = false;
-      }
-
-      const id = chatIdFor(currentUser.uid, uid);
-      const msgsRef = ref(db, `messages/${id}`);
-      onValue(msgsRef, snap=>{
-        $('messages').innerHTML = "";
-        if (!snap.exists()) return;
-        snap.forEach(child=>{
-          const m = child.val();
-          const div = document.createElement('div');
-          div.className = 'message ' + ((m.senderUid===currentUser.uid) ? 'me' : 'them');
-          div.innerText = ` ${m.text}`;
-          $('messages').appendChild(div);
-        });
-        $('messages').scrollTop = $('messages').scrollHeight;
-      });
-
-      const myUnreadRef = ref(db, `unread/${id}/${currentUser.uid}`);
-      set(myUnreadRef, 0);
-    };
-
-    window.sendChatMessage = async ()=>{
-      if (!activeChatUid) { alert("Select a contact"); return; }
-      const text = $('message-input').value.trim();
-      if (!text) return;
-      if (myProfile.blocked && myProfile.blocked[activeChatUid]) { alert("Unblock to send"); return; }
-
-      const id = chatIdFor(currentUser.uid, activeChatUid);
-      const payload = { text, senderUid: currentUser.uid, senderEmail: currentUser.email || currentUser.uid, senderName: myProfile.displayName || currentUser.displayName || currentUser.email, ts: Date.now() };
-      await push(ref(db, `messages/${id}`), payload);
-      const otherUnreadRef = ref(db, `unread/${id}/${activeChatUid}`);
-      const snap = await get(otherUnreadRef);
-      const val = snap.exists() ? (snap.val() || 0) : 0;
-      set(otherUnreadRef, val + 1);
-      $('message-input').value = "";
-    };
-
-    const attachUnreadListener = () => {
-      const myContactsRef = ref(db, `contacts/${currentUser.uid}`);
-      onValue(myContactsRef, snap=>{
-        const container = $('contacts-list');
-        setTimeout(async ()=>{
-          const nodes = container.querySelectorAll('.contact');
-          snap.forEach(async cSnap => {
-            const otherUid = cSnap.key;
-            const id = chatIdFor(currentUser.uid, otherUid);
-            const unreadSnap = await get(ref(db, `unread/${id}/${currentUser.uid}`));
-            const n = unreadSnap.exists() ? (unreadSnap.val() || 0) : 0;
-            nodes.forEach(node=>{
-              if (node.innerText.includes(otherUid) || node.innerText.includes(cSnap.val().name)){
-                let bad = node.querySelector('.badge');
-                if (!bad && n>0){
-                  bad = document.createElement('span'); bad.className='badge'; bad.innerText = n;
-                  node.querySelector('div').appendChild(bad);
-                } else if (bad){
-                  if (n>0) bad.innerText = n; else bad.remove();
-                }
-              }
-            });
-          });
-        }, 200);
-      });
-    };
-
-    setInterval(()=>{ if (currentUser) attachUnreadListener(); }, 5000);
-
-    // ---------------------------
-    // BLOCK / UNBLOCK
-    // ---------------------------
-    window.blockUser = async ()=>{
-      if (!activeChatUid) return;
-      myProfile.blocked = myProfile.blocked || {};
-      myProfile.blocked[activeChatUid] = Date.now();
-      await update(ref(db, `profiles/${currentUser.uid}`), { blocked: myProfile.blocked });
-      updateProfileCard();
-      $('btn-block').classList.add('hidden');
-      $('btn-unblock').classList.remove('hidden');
-      $('message-input').disabled = true;
-      log("Blocked " + activeChatUid);
-    };
-
-    window.unblockUser = async ()=>{
-      if (!activeChatUid) return;
-      myProfile.blocked = myProfile.blocked || {};
-      delete myProfile.blocked[activeChatUid];
-      await update(ref(db, `profiles/${currentUser.uid}`), { blocked: myProfile.blocked });
-      updateProfileCard();
-      $('btn-block').classList.remove('hidden');
-      $('btn-unblock').classList.add('hidden');
-      $('message-input').disabled = false;
-      log("Unblocked " + activeChatUid);
-    };
-
-    // ---------------------------
-    // WEBRTC CALLING (Voice only)
-    // ---------------------------
-    function attachIncomingCallListener(){
-      const callsRef = ref(db, `calls`);
-      onChildAdded(callsRef, async snap=>{
-        const c = snap.val();
-        const id = snap.key;
-        if (c && c.calleeUid === currentUser.uid && c.status === 'offer'){
-          $('incoming-from').innerText = c.callerName || c.callerUid;
-          $('incoming-uid').innerText = c.callerUid;
-          $('incoming-call').classList.remove('hidden');
-          currentCallId = id;
-          log("Incoming call from " + c.callerUid);
-        }
-      });
-    }
-
-    window.startCall = async (targetUid) => {
-      if (!targetUid) targetUid = activeChatUid;
-      if (!targetUid) { alert("Select contact to call"); return; }
-      if (myProfile.blocked && myProfile.blocked[targetUid]) { alert("Cannot call blocked user"); return; }
-
-      const callRef = push(ref(db, 'calls'));
-      const callId = callRef.key;
-      currentCallId = callId;
-
-      // voice-only
-      localStream = await navigator.mediaDevices.getUserMedia({ audio:true }).catch(e=>{ alert("Microphone permission needed"); throw e; });
-      $('localAudio').srcObject = localStream;
-      $('webrtc-ui').classList.remove('hidden');
-
-      pc = new RTCPeerConnection(configuration);
-      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-      pc.ontrack = event => { $('remoteAudio').srcObject = event.streams[0]; };
-
-      const callerCandidatesRef = ref(db, `calls/${callId}/callerCandidates`);
-      pc.onicecandidate = event => {
-        if (event.candidate){
-          push(callerCandidatesRef, event.candidate.toJSON());
-        }
-      };
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      await set(callRef, {
-        callerUid: currentUser.uid,
-        callerName: myProfile.displayName || currentUser.displayName || currentUser.email,
-        calleeUid: targetUid,
-        status: 'offer',
-        sdp: offer.sdp,
-        createdAt: Date.now()
-      });
-
-      log("Call offer sent to " + targetUid);
-
-      const callSnapRef = ref(db, `calls/${callId}`);
-      onValue(callSnapRef, async snap=>{
-        const val = snap.val();
-        if (!val) return;
-        if (val.status === 'answered' && val.answerSdp){
-          const remoteDesc = { type: 'answer', sdp: val.answerSdp };
-          await pc.setRemoteDescription(remoteDesc);
-          log("Remote description set (answer)");
-        }
-      });
-
-      const calleeCandidatesRef = ref(db, `calls/${callId}/calleeCandidates`);
-      onChildAdded(calleeCandidatesRef, snap=>{
-        const cand = snap.val();
-        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
-      });
-    };
-
-    window.acceptIncoming = async ()=>{
-      if (!currentCallId) return;
-      $('incoming-call').classList.add('hidden');
-
-      const callRef = ref(db, `calls/${currentCallId}`);
-      const callSnap = await get(callRef);
-      if (!callSnap.exists()) { log("Call no longer exists"); return; }
-      const callData = callSnap.val();
-
-      localStream = await navigator.mediaDevices.getUserMedia({ audio:true }).catch(e=>{ alert("Allow microphone"); throw e; });
-      $('localAudio').srcObject = localStream;
-      $('webrtc-ui').classList.remove('hidden');
-
-      pc = new RTCPeerConnection(configuration);
-      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-      pc.ontrack = event => { $('remoteAudio').srcObject = event.streams[0]; };
-
-      const calleeCandidatesRef = ref(db, `calls/${currentCallId}/calleeCandidates`);
-      pc.onicecandidate = event => {
-        if (event.candidate) push(calleeCandidatesRef, event.candidate.toJSON());
-      };
-
-      const offerDesc = { type:'offer', sdp: callData.sdp };
-      await pc.setRemoteDescription(offerDesc);
-
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      await update(callRef, { answerSdp: answer.sdp, status: 'answered' });
-
-      const callerCandidatesRef = ref(db, `calls/${currentCallId}/callerCandidates`);
-      onChildAdded(callerCandidatesRef, snap=>{
-        const cand = snap.val();
-        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
-      });
-
-      log("Answered call " + currentCallId);
-    };
-
-    window.rejectIncoming = async ()=>{
-      if (!currentCallId) return;
-      await update(ref(db, `calls/${currentCallId}`), { status: 'rejected' });
-      $('incoming-call').classList.add('hidden');
-      log("Call rejected");
-      currentCallId = null;
-    };
-
-    window.endCall = async ()=>{
-      if (!currentCallId) return;
-      await update(ref(db, `calls/${currentCallId}`), { status: 'ended' });
-      cleanupCall();
-      log("Call ended");
-    };
-
-    async function cleanupCall(){
-      try{
-        if (pc){ pc.close(); pc = null; }
-        if (localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream = null; }
-        $('webrtc-ui').classList.add('hidden');
-        $('localAudio').srcObject = null;
-        $('remoteAudio').srcObject = null;
-        currentCallId = null;
-      } catch(e){ console.warn(e); }
-    }
-
-    const monitorCallsForCleanup = () => {
-      const callsRef = ref(db, 'calls');
-      onChildAdded(callsRef, snap=>{
-        const id = snap.key;
-        onValue(ref(db, `calls/${id}/status`), snap2=>{
-          const s = snap2.val();
-          if (s === 'ended' || s === 'rejected'){
-            if (currentCallId === id){
-              cleanupCall();
-              log("Remote ended/rejected call");
-            }
-          }
-        });
-      });
-    };
-    monitorCallsForCleanup();
-
-    // ---------------------------
-    // Misc utilities & heartbeat
-    // ---------------------------
-    function uidShort(u){ return u ? u.substr(0,6) : ''; }
-    setInterval(async ()=>{
-      if (!currentUser) return;
-      const snap = await get(ref(db, `profiles/${currentUser.uid}`));
-      if (snap.exists()){
-        myProfile = snap.val();
-        updateProfileCard();
-      }
-    }, 5000);
-
-    log("App loaded. Use Google Sign-In. Replace firebaseConfig with your keys if needed.");
-  </script>
+</script>
 </body>
 </html>
