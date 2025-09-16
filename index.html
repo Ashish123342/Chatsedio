@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>CallingApp — Single File (Google Sign-In + Voice)</title>
+  <title>Tsedio — Google Sign-In + Voice</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   :root {
@@ -313,7 +313,6 @@ input[type="password"] {
 </head>
 <body>
   <div id="app-container">
-    <!-- LEFT: Auth / Profile / Contacts -->
     <div class="panel" style="flex:0.9; min-width:320px;">
       <header class="app-header">
         <h3>Tsedio</h3>
@@ -323,7 +322,6 @@ input[type="password"] {
         </div>
       </header>
 
-      <!-- AUTH -->
       <div id="auth-view">
         <h3>Sign in</h3>
         <div class="row">
@@ -332,7 +330,6 @@ input[type="password"] {
         <div id="auth-error" class="small" style="color:#c00"></div>
       </div>
 
-      <!-- PROFILE SETUP -->
       <div id="profile-setup" class="hidden">
         <h3>Setup Profile</h3>
         <div class="small">Choose a display name (this will be your public username) — emoji will be generated.</div>
@@ -343,7 +340,6 @@ input[type="password"] {
         <div id="profile-error" class="small" style="color:#c00"></div>
       </div>
 
-      <!-- MAIN LEFT -->
       <div id="main-left" class="hidden">
         <div class="flex" style="justify-content:space-between">
           <strong>Contacts</strong>
@@ -370,7 +366,6 @@ input[type="password"] {
         </div>
       </div>
 
-      <!-- FIND FRIEND / SEND REQUEST -->
       <div id="find-view" class="hidden">
         <h3>Add friend by UID</h3>
         <div class="small">Enter recipient UID (from their profile)</div>
@@ -379,16 +374,13 @@ input[type="password"] {
         <div id="find-msg" class="small"></div>
       </div>
 
-      <!-- REQUESTS -->
       <div id="requests-view" class="hidden">
         <h3>Incoming Requests</h3>
         <div id="requests-list"></div>
       </div>
     </div>
 
-    <!-- RIGHT: Chat / Calls -->
     <div class="panel" style="flex:1.6;">
-      <!-- Chat header -->
       <div id="chat-controls" class="hidden">
         <div class="flex" style="justify-content:space-between;">
           <div>
@@ -412,7 +404,6 @@ input[type="password"] {
         <div class="small" id="unread-info"></div>
       </div>
 
-      <!-- Calls UI (voice only) -->
       <div id="webrtc-ui" class="hidden" style="margin-top:12px;">
         <div class="flex" style="gap:12px;">
           <div>
@@ -435,7 +426,6 @@ input[type="password"] {
         </div>
       </div>
 
-      <!-- Incoming call modal -->
       <div id="incoming-call" class="hidden" style="margin-top:12px; padding:12px; border-radius:8px; border:1px solid #eee;">
         <div class="flex" style="justify-content:space-between;">
           <div>
@@ -453,7 +443,6 @@ input[type="password"] {
     </div>
   </div>
 
-  <!-- Firebase + App JS -->
   <script type="module">
     // ---------------------------
     // Firebase Imports (modular)
@@ -468,15 +457,17 @@ input[type="password"] {
     // CONFIG - Replace with your keys
     // ---------------------------
     const firebaseConfig = {
-  apiKey: "AIzaSyDTjjxt12p-0CMeey4EjKqiWAz9trGB0kQ",
-  authDomain: "tsedio-a122c.firebaseapp.com",
-  databaseURL: "https://tsedio-a122c-default-rtdb.firebaseio.com",
-  projectId: "tsedio-a122c",
-  storageBucket: "tsedio-a122c.firebasestorage.app",
-  messagingSenderId: "44533653921",
-  appId: "1:44533653921:web:07676dce93af9690136be0",
-  measurementId: "G-ZFZG6MBV1X"
-};
+      // Replace with your Firebase config
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      measurementId: "G-XXXXXXX"
+    };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth();
     const db = getDatabase(app);
@@ -504,6 +495,10 @@ input[type="password"] {
     // ---------------------------
     window.googleSignIn = async ()=>{
       try{
+        // Store initial state to prevent sessionStorage error
+        const state = Math.random().toString(36).substring(2, 15);
+        sessionStorage.setItem('googleSignInState', state);
+        
         await signInWithPopup(auth, provider);
       }catch(e){
         $('auth-error').innerText = e.message || e.toString();
@@ -512,6 +507,8 @@ input[type="password"] {
 
     window.logout = async ()=>{
       await signOut(auth);
+      // Clear sessionStorage to prevent state errors
+      sessionStorage.removeItem('googleSignInState');
       location.reload();
     };
 
@@ -527,9 +524,16 @@ input[type="password"] {
         // check profile in DB
         const profSnap = await get(child(ref(db), `profiles/${user.uid}`));
         if (!profSnap.exists()){
-          // show profile setup, prefill with Google name if available
-          $('profile-setup').classList.remove('hidden');
-          $('profile-name').value = user.displayName || '';
+          // Auto-create profile using Google account info
+          const profile = { 
+            displayName: user.displayName || user.email.split('@')[0], 
+            emoji: genEmoji(user.displayName || user.email),
+            createdAt: Date.now(), 
+            blocked: {} 
+          };
+          await set(ref(db, `profiles/${user.uid}`), profile);
+          myProfile = profile;
+          initMainUI();
         } else {
           myProfile = profSnap.val();
           initMainUI();
@@ -854,116 +858,97 @@ input[type="password"] {
       onValue(callSnapRef, async snap=>{
         const val = snap.val();
         if (!val) return;
-        if (val.status === 'answered' && val.answerSdp){
-          const remoteDesc = { type: 'answer', sdp: val.answerSdp };
+        if (val.status === 'answered' && val.calleeUid === targetUid) {
+          log("Call answered. Setting remote description");
+          const remoteDesc = new RTCSessionDescription({ type: 'answer', sdp: val.sdp });
           await pc.setRemoteDescription(remoteDesc);
-          log("Remote description set (answer)");
+          attachIceCandidateListener(callId, 'calleeCandidates');
+        } else if (val.status === 'rejected') {
+          log("Call rejected");
+          endCall();
         }
-      });
-
-      const calleeCandidatesRef = ref(db, `calls/${callId}/calleeCandidates`);
-      onChildAdded(calleeCandidatesRef, snap=>{
-        const cand = snap.val();
-        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
       });
     };
 
     window.acceptIncoming = async ()=>{
-      if (!currentCallId) return;
       $('incoming-call').classList.add('hidden');
+      $('webrtc-ui').classList.remove('hidden');
 
       const callRef = ref(db, `calls/${currentCallId}`);
       const callSnap = await get(callRef);
-      if (!callSnap.exists()) { log("Call no longer exists"); return; }
       const callData = callSnap.val();
 
-      localStream = await navigator.mediaDevices.getUserMedia({ audio:true }).catch(e=>{ alert("Allow microphone"); throw e; });
+      localStream = await navigator.mediaDevices.getUserMedia({ audio:true });
       $('localAudio').srcObject = localStream;
-      $('webrtc-ui').classList.remove('hidden');
-
       pc = new RTCPeerConnection(configuration);
       localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
       pc.ontrack = event => { $('remoteAudio').srcObject = event.streams[0]; };
 
       const calleeCandidatesRef = ref(db, `calls/${currentCallId}/calleeCandidates`);
       pc.onicecandidate = event => {
-        if (event.candidate) push(calleeCandidatesRef, event.candidate.toJSON());
+        if (event.candidate){
+          push(calleeCandidatesRef, event.candidate.toJSON());
+        }
       };
 
-      const offerDesc = { type:'offer', sdp: callData.sdp };
-      await pc.setRemoteDescription(offerDesc);
-
+      const offer = new RTCSessionDescription({ type: 'offer', sdp: callData.sdp });
+      await pc.setRemoteDescription(offer);
+      
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
-      await update(callRef, { answerSdp: answer.sdp, status: 'answered' });
-
-      const callerCandidatesRef = ref(db, `calls/${currentCallId}/callerCandidates`);
-      onChildAdded(callerCandidatesRef, snap=>{
-        const cand = snap.val();
-        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
-      });
-
-      log("Answered call " + currentCallId);
+      await update(callRef, { status: 'answered', sdp: answer.sdp, answeredAt: Date.now() });
+      log("Call accepted. Sending answer.");
+      attachIceCandidateListener(currentCallId, 'callerCandidates');
     };
 
     window.rejectIncoming = async ()=>{
-      if (!currentCallId) return;
-      await update(ref(db, `calls/${currentCallId}`), { status: 'rejected' });
-      $('incoming-call').classList.add('hidden');
-      log("Call rejected");
-      currentCallId = null;
-    };
-
-    window.endCall = async ()=>{
-      if (!currentCallId) return;
-      await update(ref(db, `calls/${currentCallId}`), { status: 'ended' });
-      cleanupCall();
-      log("Call ended");
-    };
-
-    async function cleanupCall(){
-      try{
-        if (pc){ pc.close(); pc = null; }
-        if (localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream = null; }
-        $('webrtc-ui').classList.add('hidden');
-        $('localAudio').srcObject = null;
-        $('remoteAudio').srcObject = null;
+      if (currentCallId) {
+        const callRef = ref(db, `calls/${currentCallId}`);
+        await update(callRef, { status: 'rejected' });
+        log("Call rejected");
+        $('incoming-call').classList.add('hidden');
         currentCallId = null;
-      } catch(e){ console.warn(e); }
+      }
+    };
+
+    function attachIceCandidateListener(callId, type){
+      const candidatesRef = ref(db, `calls/${callId}/${type}`);
+      onChildAdded(candidatesRef, snap=>{
+        const candidate = new RTCIceCandidate(snap.val());
+        pc?.addIceCandidate(candidate).catch(e => log("Error adding ICE candidate: " + e));
+      });
     }
 
-    const monitorCallsForCleanup = () => {
-      const callsRef = ref(db, 'calls');
-      onChildAdded(callsRef, snap=>{
-        const id = snap.key;
-        onValue(ref(db, `calls/${id}/status`), snap2=>{
-          const s = snap2.val();
-          if (s === 'ended' || s === 'rejected'){
-            if (currentCallId === id){
-              cleanupCall();
-              log("Remote ended/rejected call");
-            }
-          }
-        });
-      });
-    };
-    monitorCallsForCleanup();
-
-    // ---------------------------
-    // Misc utilities & heartbeat
-    // ---------------------------
-    function uidShort(u){ return u ? u.substr(0,6) : ''; }
-    setInterval(async ()=>{
-      if (!currentUser) return;
-      const snap = await get(ref(db, `profiles/${currentUser.uid}`));
-      if (snap.exists()){
-        myProfile = snap.val();
-        updateProfileCard();
+    window.endCall = async ()=>{
+      if (pc) {
+        pc.close();
+        pc = null;
       }
-    }, 5000);
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      if (currentCallId) {
+        await remove(ref(db, `calls/${currentCallId}`));
+        currentCallId = null;
+      }
+      $('webrtc-ui').classList.add('hidden');
+      log("Call ended.");
+    };
 
-    log("App loaded. Use Google Sign-In (popup). Replace firebaseConfig placeholders with your project keys.");
+    // Auto-complete the incomplete line
+    if (val.status === 'answered' && val.calleeUid === targetUid) {
+      log("Call answered. Setting remote description");
+      const remoteDesc = new RTCSessionDescription({ type: 'answer', sdp: val.sdp });
+      await pc.setRemoteDescription(remoteDesc);
+      attachIceCandidateListener(callId, 'calleeCandidates');
+    } else if (val.status === 'rejected') {
+      log("Call rejected");
+      endCall();
+    }
+  });
+};
   </script>
 </body>
 </html>
