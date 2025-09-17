@@ -810,164 +810,381 @@ input[type="password"] {
         $('remoteVideo').srcObject = event.streams[0];
       };
       // ICE candidates => write to DB under callerCandidates
-      const callerCandidatesRef = ref(db, `calls/${callId}/callerCandidates`);
-      pc.onicecandidate = event => {
-        if (event.candidate){
-          push(callerCandidatesRef, event.candidate.toJSON());
-        }
-      };
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Chat + Call App (Anonymous)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+:root {
+  --primary: #666DC7;
+  --primary-dark: #585FC1;
+  --muted: linear-gradient(135deg, #eef2ff 0%, #f9fafb 100%);
+  --card-bg: rgba(255,255,255,0.9);
+  --card-blur: blur(6px);
+}
+body {
+  margin:0; font-family: system-ui, sans-serif; background:var(--muted); color:#111;
+  display:flex; justify-content:center; align-items:center; height:100vh;
+}
+#app {
+  width:100%; max-width:500px; height:90vh; background:var(--card-bg);
+  backdrop-filter:var(--card-blur); border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,0.1);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+header { padding:12px; background:var(--primary); color:#fff; text-align:center; font-weight:bold; font-size:18px; }
+#user-info { padding:10px; font-size:16px; text-align:center; background:#f3f4f6; }
+#tabs { display:flex; }
+#tabs button {
+ flex:1; padding:12px; border:none; background:#e5e7eb; cursor:pointer;
+ font-weight:500; font-size:15px;
+}
+#tabs button.active { background:var(--primary); color:#fff; }
+.view { flex:1; overflow-y:auto; display:none; padding:10px; }
+.view.active { display:block; }
+.user-item, .friend-item, .chat-item {
+ padding:10px; margin:6px 0; background:#fff; border-radius:8px; display:flex;
+ justify-content:space-between; align-items:center; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.05);
+ font-size:15px;
+}
+.user-item button, .friend-item button, .chat-item button {
+ margin-left:4px; border:none; background:var(--primary); color:#fff;
+ border-radius:6px; padding:5px 9px; cursor:pointer; font-size:13px;
+}
+#chat-box { display:flex; flex-direction:column; height:100%; }
+#messages { flex:1; overflow-y:auto; padding:10px; font-size:16px; display:flex; flex-direction:column; }
+.msg-container { display:flex; margin:6px 0; }
+.msg-container.me { justify-content:flex-end; }
+.msg-container.other { justify-content:flex-start; }
+.msg { max-width:70%; padding:10px 14px; border-radius:16px; word-wrap:break-word; position:relative; font-size:16px; }
+.msg.me { background:var(--primary); color:#fff; border-bottom-right-radius:4px; }
+.msg.other { background:#e5e7eb; border-bottom-left-radius:4px; }
+.msg-time { font-size:11px; color:#777; text-align:right; margin-top:4px; }
+#send-box { display:flex; padding:10px; background:#f0f0f0; }
+#send-box input { flex:1; padding:12px; border:1px solid #ddd; border-radius:20px; font-size:16px; outline:none; }
+#send-box button { margin-left:8px; background:var(--primary); color:#fff; border:none; border-radius:50%; width:40px; height:40px; font-size:18px; cursor:pointer; }
+#call-overlay {
+ position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7);
+ display:none; justify-content:center; align-items:center; flex-direction:column; color:#fff;
+}
+#call-overlay button {
+ margin:6px; padding:10px 16px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;
+}
+#localVideo, #remoteVideo { width:40%; background:#000; margin:6px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>📞 Chat + Call App</header>
+  <div id="user-info">Signing in...</div>
+  <div id="tabs">
+    <button data-view="people" class="active">People</button>
+    <button data-view="friends">Friends</button>
+    <button data-view="chats">Chats</button>
+  </div>
+  <div id="people" class="view active"></div>
+  <div id="friends" class="view"></div>
+  <div id="chats" class="view"></div>
+</div><div id="chat-box" style="display:none;">
+  <header id="chat-header" style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:var(--primary); color:#fff;">
+    <span id="back-btn" style="cursor:pointer;">←</span>
+    <span id="chat-with-name"></span>
+    <span style="width:24px;"></span>
+  </header>
+  <div id="messages"></div>
+  <div id="send-box">
+    <input id="msgInput" placeholder="Type a message..." />
+    <button id="sendBtn">➤</button>
+  </div>
+</div><div id="call-overlay">
+  <h2 id="call-status">Calling...</h2>
+  <video id="remoteVideo" autoplay playsinline></video>
+  <video id="localVideo" autoplay playsinline muted></video>
+  <div>
+    <button id="answerBtn" style="background:green;">Answer</button>
+    <button id="rejectBtn" style="background:red;">Reject</button>
+    <button id="endBtn" style="background:red; display:none;">End</button>
+  </div>
+</div><script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getDatabase, ref, set, get, onChildAdded, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
-      // create offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+// 🔹 Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyDTjjxt12p-0CMeey4EjKqiWAz9trGB0kQ",
+  authDomain: "tsedio-a122c.firebaseapp.com",
+  databaseURL: "https://tsedio-a122c-default-rtdb.firebaseio.com",
+  projectId: "tsedio-a122c",
+  storageBucket: "tsedio-a122c.firebasestorage.app",
+  messagingSenderId: "44533653921",
+  appId: "1:44533653921:web:07676dce93af9690136be0",
+  measurementId: "G-ZFZG6MBV1X"
+};
 
-      // create call entry
-      await set(callRef, {
-        callerUid: currentUser.uid,
-        callerName: myProfile.displayName || (`anon:${currentUser.uid}`),
-        calleeUid: targetUid,
-        status: 'offer',
-        sdp: offer.sdp,
-        createdAt: Date.now()
-      });
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-      log("Call offer sent to " + targetUid);
+let currentUser = null;
+let userName = null;
+let chatWith = null;
+let chatWithName = null;
+let pc = null, localStream;
 
-      // listen for answer and remote ICE
-      const callSnapRef = ref(db, `calls/${callId}`);
-      onValue(callSnapRef, async snap=>{
-        const val = snap.val();
-        if (!val) return;
-        // if answer arrives
-        if (val.status === 'answered' && val.answerSdp){
-          const remoteDesc = { type: 'answer', sdp: val.answerSdp };
-          await pc.setRemoteDescription(remoteDesc);
-          log("Remote description set (answer)");
-        }
-      });
-
-      // listen for callee ICE candidates
-      const calleeCandidatesRef = ref(db, `calls/${callId}/calleeCandidates`);
-      onChildAdded(calleeCandidatesRef, snap=>{
-        const cand = snap.val();
-        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
-      });
-    };
-
-    window.acceptIncoming = async ()=>{
-      if (!currentCallId) return;
-      $('incoming-call').classList.add('hidden');
-
-      const callRef = ref(db, `calls/${currentCallId}`);
-      const callSnap = await get(callRef);
-      if (!callSnap.exists()) { log("Call no longer exists"); return; }
-      const callData = callSnap.val();
-
-      // create local stream & pc
-      localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:true }).catch(e=>{ alert("Allow camera/mic"); throw e; });
-      $('localVideo').srcObject = localStream;
-      $('webrtc-ui').classList.remove('hidden');
-
-      pc = new RTCPeerConnection(configuration);
-      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-      pc.ontrack = event => { $('remoteVideo').srcObject = event.streams[0]; };
-
-      // ICE: calleeCandidates -> write
-      const calleeCandidatesRef = ref(db, `calls/${currentCallId}/calleeCandidates`);
-      pc.onicecandidate = event => {
-        if (event.candidate) push(calleeCandidatesRef, event.candidate.toJSON());
-      };
-
-      // set remote desc from offer
-      const offerDesc = { type:'offer', sdp: callData.sdp };
-      await pc.setRemoteDescription(offerDesc);
-
-      // create answer
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      // update call doc with answer
-      await update(callRef, { answerSdp: answer.sdp, status: 'answered' });
-
-      // listen for caller ICE
-      const callerCandidatesRef = ref(db, `calls/${currentCallId}/callerCandidates`);
-      onChildAdded(callerCandidatesRef, snap=>{
-        const cand = snap.val();
-        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
-      });
-
-      log("Answered call " + currentCallId);
-    };
-
-    window.rejectIncoming = async ()=>{
-      if (!currentCallId) return;
-      await update(ref(db, `calls/${currentCallId}`), { status: 'rejected' });
-      $('incoming-call').classList.add('hidden');
-      log("Call rejected");
-      currentCallId = null;
-    };
-
-    window.endCall = async ()=>{
-      if (!currentCallId) return;
-      await update(ref(db, `calls/${currentCallId}`), { status: 'ended' });
-      cleanupCall();
-      log("Call ended");
-    };
-
-    async function cleanupCall(){
-      try{
-        if (pc){ pc.close(); pc = null; }
-        if (localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream = null; }
-        $('webrtc-ui').classList.add('hidden');
-        $('localVideo').srcObject = null;
-        $('remoteVideo').srcObject = null;
-        currentCallId = null;
-      } catch(e){ console.warn(e); }
+// 🔹 Anonymous Auth
+signInAnonymously(auth).catch(e=>alert(e.message));
+onAuthStateChanged(auth, async user=>{
+  if(user){
+    currentUser = user;
+    
+    // Prompt user for name
+    let name = prompt('Enter your name');
+    if (!name || name.trim() === '') {
+      name = 'Anonymous';
     }
+    userName = name.trim();
+    
+    document.getElementById("user-info").innerText = `Name: ${userName}`;
+    set(ref(db,`users/${user.uid}`),{ 
+      uid: user.uid, 
+      name: userName,
+      online: true 
+    });
+    
+    loadPeople();
+    listenRequests();
+    listenChats();
+    listenCalls();
+  }
+});
 
-    // Also listen for changes to call status to cleanup on remote hangup/reject
-    const monitorCallsForCleanup = () => {
-      const callsRef = ref(db, 'calls');
-      onChildAdded(callsRef, snap=>{
-        const id = snap.key;
-        onValue(ref(db, `calls/${id}/status`), snap2=>{
-          const s = snap2.val();
-          if (s === 'ended' || s === 'rejected'){
-            if (currentCallId === id){
-              cleanupCall();
-              log("Remote ended/rejected call");
-            }
-          }
-        });
+// 🔹 Tabs
+Array.from(document.querySelectorAll('#tabs button')).forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById(btn.dataset.view).classList.add('active');
+  }
+});
+
+// 🔹 People List
+function loadPeople(){
+  onChildAdded(ref(db,"users"), snap=>{
+    const u = snap.val();
+    if(u.uid === currentUser.uid) return;
+    
+    const div = document.createElement("div");
+    div.className = "user-item";
+    div.innerHTML = `<span>${u.name || u.uid}</span><button>Add</button>`;
+    div.querySelector("button").onclick = () => sendRequest(u.uid);
+    document.getElementById("people").appendChild(div);
+  });
+}
+
+function sendRequest(to){
+  set(ref(db,`requests/${to}/${currentUser.uid}`),{ 
+    from: currentUser.uid,
+    fromName: userName
+  });
+  alert("Request sent");
+}
+
+// 🔹 Friend Requests + Friends
+function listenRequests(){
+  onChildAdded(ref(db,`requests/${currentUser.uid}`), snap=>{
+    const r = snap.val();
+    const div = document.createElement("div");
+    div.className = "friend-item";
+    div.innerHTML = `Request from ${r.fromName || r.from}<button>Accept</button><button>Reject</button>`;
+    div.querySelectorAll("button")[0].onclick = () => {
+      set(ref(db,`friends/${currentUser.uid}/${r.from}`),{ 
+        uid: r.from,
+        name: r.fromName
       });
+      set(ref(db,`friends/${r.from}/${currentUser.uid}`),{ 
+        uid: currentUser.uid,
+        name: userName
+      });
+      remove(ref(db,`requests/${currentUser.uid}/${r.from}`));
+      alert("Accepted");
     };
-    monitorCallsForCleanup();
+    div.querySelectorAll("button")[1].onclick = () => remove(ref(db,`requests/${currentUser.uid}/${r.from}`));
+    document.getElementById("friends").appendChild(div);
+  });
+}
 
-    // ---------------------------
-    // Incoming call accept via button, and more
-    // ---------------------------
-    window.rejectCall = window.rejectIncoming; // alias
+// 🔹 Chats
+function listenChats(){
+  onChildAdded(ref(db,`friends/${currentUser.uid}`), snap=>{
+    const f = snap.val();
+    const div = document.createElement("div");
+    div.className = "chat-item";
+    div.innerHTML = `Friend: ${f.name || f.uid}<button>Chat</button><button>Call</button>`;
+    div.querySelector("button").onclick = () => openChat(f.uid, f.name);
+    div.querySelectorAll("button")[1].onclick = () => startCall(f.uid);
+    document.getElementById("chats").appendChild(div);
+  });
+}
 
-    // ---------------------------
-    // Misc utilities
-    // ---------------------------
-    function uidShort(u){ return u ? u.substr(0,6) : ''; }
-    // small heartbeat to refresh profile from DB (so blocked changes reflect quickly)
-    setInterval(async ()=>{
-      if (!currentUser) return;
-      const snap = await get(ref(db, `profiles/${currentUser.uid}`));
-      if (snap.exists()){
-        myProfile = snap.val();
-        updateProfileCard();
-      }
-    }, 5000);
+function openChat(uid, friendName){
+  chatWith = uid;
+  chatWithName = friendName;
+  document.getElementById("app").style.display = "none";
+  document.getElementById("chat-box").style.display = "flex";
+  document.getElementById("chat-with-name").innerText = friendName || uid;
+  const msgDiv = document.getElementById("messages");
+  msgDiv.innerHTML = "";
+  
+  onChildAdded(ref(db,`messages/${chatWith}/${currentUser.uid}`), snap=>{
+    const m = snap.val();
+    addMsg(m.text, "other", m.timestamp);
+  });
+  
+  onChildAdded(ref(db,`messages/${currentUser.uid}/${chatWith}`), snap=>{
+    const m = snap.val();
+    addMsg(m.text, "me", m.timestamp, snap.key);
+  });
+}
 
-    // ---------------------------
-    // Initial small instructions in console and system-log
-    // ---------------------------
-    log("App loaded. Please continue as guest. Replace firebaseConfig with your keys and enable Anonymous Auth in Firebase console.");
+function formatTime(timestamp) {
+  if (!timestamp) return "";
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
-    // END of MODULE
-  </script>
-</body>
+function addMsg(text, cls, timestamp, key){
+  const container = document.createElement("div");
+  container.className = "msg-container " + cls;
+  
+  const msgDiv = document.createElement("div");
+  msgDiv.className = "msg " + cls;
+  msgDiv.innerText = text;
+  
+  const timeDiv = document.createElement("div");
+  timeDiv.className = "msg-time";
+  timeDiv.innerText = formatTime(timestamp);
+  
+  msgDiv.appendChild(timeDiv);
+  container.appendChild(msgDiv);
+  
+  if(cls === "me" && key){
+    let pressTimer;
+    container.onmousedown = () => {
+      pressTimer = setTimeout(() => {
+        remove(ref(db,`messages/${currentUser.uid}/${chatWith}/${key}`));
+        container.remove();
+      }, 800); // long press 800ms
+    };
+    container.onmouseup = () => clearTimeout(pressTimer);
+    container.onmouseleave = () => clearTimeout(pressTimer);
+  }
+  
+  document.getElementById("messages").appendChild(container);
+  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+}
+
+document.getElementById("sendBtn").onclick = () => {
+  const val = document.getElementById("msgInput").value;
+  if(!val) return;
+  push(ref(db,`messages/${currentUser.uid}/${chatWith}`),{ 
+    text: val,
+    timestamp: Date.now()
+  });
+  document.getElementById("msgInput").value = "";
+};
+
+// Back button functionality
+document.getElementById("back-btn").onclick = () => {
+  document.getElementById("chat-box").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+};
+
+// 🔹 WebRTC Calls
+async function startCall(to){
+  document.getElementById("call-overlay").style.display = "flex";
+  document.getElementById("call-status").innerText = "Calling " + to;
+  document.getElementById("answerBtn").style.display = "none";
+  document.getElementById("rejectBtn").style.display = "none";
+  document.getElementById("endBtn").style.display = "block";
+  
+  pc = new RTCPeerConnection();
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true, video:true});
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  document.getElementById("localVideo").srcObject = localStream;
+  
+  pc.ontrack = e => document.getElementById("remoteVideo").srcObject = e.streams[0];
+  pc.onicecandidate = e => { 
+    if(e.candidate) push(ref(db,`calls/${to}`),{ 
+      from: currentUser.uid,
+      fromName: userName,
+      candidate: e.candidate 
+    }); 
+  };
+  
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  push(ref(db,`calls/${to}`),{ 
+    from: currentUser.uid,
+    fromName: userName,
+    offer 
+  });
+}
+
+function listenCalls(){
+  onChildAdded(ref(db,`calls/${currentUser.uid}`), async snap=>{
+    const c = snap.val();
+    if(c.offer){
+      pc = new RTCPeerConnection();
+      localStream = await navigator.mediaDevices.getUserMedia({audio:true, video:true});
+      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+      document.getElementById("localVideo").srcObject = localStream;
+      
+      pc.ontrack = e => document.getElementById("remoteVideo").srcObject = e.streams[0];
+      pc.onicecandidate = e => { 
+        if(e.candidate) push(ref(db,`calls/${c.from}`),{ 
+          from: currentUser.uid,
+          fromName: userName,
+          candidate: e.candidate 
+        }); 
+      };
+      
+      await pc.setRemoteDescription(new RTCSessionDescription(c.offer));
+      const ans = await pc.createAnswer();
+      await pc.setLocalDescription(ans);
+      push(ref(db,`calls/${c.from}`),{ 
+        from: currentUser.uid,
+        fromName: userName,
+        answer: ans 
+      });
+      
+      document.getElementById("call-overlay").style.display = "flex";
+      document.getElementById("call-status").innerText = `Incoming Call from ${c.fromName || c.from}`;
+      document.getElementById("answerBtn").style.display = "block";
+      document.getElementById("rejectBtn").style.display = "block";
+      document.getElementById("endBtn").style.display = "none";
+    }
+    
+    if(c.answer){ await pc.setRemoteDescription(new RTCSessionDescription(c.answer)); }
+    if(c.candidate){ await pc.addIceCandidate(new RTCIceCandidate(c.candidate)); }
+  });
+}
+
+document.getElementById("endBtn").onclick = endCall;
+document.getElementById("rejectBtn").onclick = endCall;
+document.getElementById("answerBtn").onclick = () => {
+  document.getElementById("answerBtn").style.display = "none";
+  document.getElementById("rejectBtn").style.display = "none";
+  document.getElementById("endBtn").style.display = "block";
+  document.getElementById("call-status").innerText = "In Call";
+};
+
+function endCall(){
+  document.getElementById("call-overlay").style.display = "none";
+  if(pc){ pc.close(); pc = null; }
+  if(localStream){ localStream.getTracks().forEach(t => t.stop()); }
+}
+</script></body>
 </html>
