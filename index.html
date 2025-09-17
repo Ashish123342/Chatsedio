@@ -1,425 +1,973 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>Tsedio — Friends + Chat (Anonymous)</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<style>
-:root{--bg:linear-gradient(180deg,#f8fafc,#eef2ff);--card:#fff;--primary:#4f46e5;--muted:#6b7280;--radius:12px;}
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:#111}
-.wrap{display:flex;gap:12px;padding:16px;height:100vh}
-.left{flex:0.95;min-width:320px}
-.right{flex:1.6}
-.card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 10px 36px rgba(31,38,135,0.06);margin-bottom:12px}
-.h3{margin:0 0 8px 0}
-.small{font-size:0.9rem;color:var(--muted)}
-.input{width:100%;padding:10px;border-radius:10px;border:1px solid #eaeefb}
-.btn{background:var(--primary);color:#fff;border:none;padding:8px 12px;border-radius:10px;cursor:pointer}
-.btn-outline{background:#eef2ff;border:none;color:var(--primary);padding:8px 10px;border-radius:10px;cursor:pointer}
-.contact{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;border:1px solid #f1f5f9;margin-bottom:8px}
-.chat-box{height:40vh;overflow:auto;border-radius:10px;padding:12px;background:#fbfbff;border:1px solid #eef2ff}
-.message{padding:8px 10px;border-radius:10px;margin:6px 0;max-width:70%}
-.me{background:#d1fae5;margin-left:auto}
-.them{background:#fff;border:1px solid #eee}
-.modal{position:fixed;left:50%;top:15%;transform:translateX(-50%);background:#fff;padding:16px;border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,0.12);z-index:999}
-.log{font-family:monospace;font-size:0.85rem;white-space:pre-wrap}
-</style>
+  <meta charset="utf-8" />
+  <title>CallingApp — Single File (Advanced)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --muted: linear-gradient(135deg, #eef2ff 0%, #f3f4f6 100%);
+  --card-bg: rgba(255,255,255,0.85);
+  --card-blur: blur(6px);
+  --danger: #ef4444;
+  --success: #22c55e;
+  --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --radius: 18px;
+  --font: 'Inter', Arial, Helvetica, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  background: var(--muted);
+  color: #172554;
+  letter-spacing: 0.01em;
+}
+
+#app-container {
+  max-width: 960px;
+  margin: 36px auto 0 auto;
+  display: flex;
+  gap: 20px;
+  padding: 10px;
+}
+
+.panel {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px 20px;
+  flex: 1;
+  min-height: 620px;
+  backdrop-filter: var(--card-blur);
+  border: 1px solid #e0e7ef;
+  transition: box-shadow 0.2s;
+}
+
+header.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+h3 {
+  font-size: 15px;
+  letter-spacing: .03em;
+  margin: 0;
+  color: var(--primary-dark);
+  font-weight: 800;
+  text-shadow: 0 2px 14px #c7d2fe60;
+}
+
+button {
+  padding: 10px 22px;
+  border-radius: 12px;
+  border: 0;
+  min-width: 92px;
+  background: linear-gradient(90deg, var(--primary) 60%, var(--primary-dark));
+  color: #fff;
+  font-weight: 700;
+  font-family: var(--font);
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px #3b82f622;
+  transition: background 0.15s, transform 0.08s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+button:hover, button:active {
+  background: linear-gradient(100deg, var(--primary-dark) 30%, #4f46e5 100%);
+  transform: translateY(-1px) scale(1.05);
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px 10px;
+  margin: 10px 0 18px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  transition: border 0.15s;
+  font-size: 15px;
+  font-family: var(--font);
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #a5b4fc;
+  outline: none;
+}
+
+.hidden { display: none !important; }
+
+.row, .flex { display: flex; gap: 10px; align-items: center; }
+.flex-col { display: flex; flex-direction: column; }
+
+.contact {
+  padding: 12px 10px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: rgba(243, 246, 255, 0.9);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  transition: box-shadow 0.15s, border 0.18s;
+  box-shadow: 0 1px 7px #93c5fd19;
+}
+.contact:hover {
+  border: 1.7px solid #818cf8;
+  box-shadow: 0 3px 12px #2563eb14;
+}
+
+.badge {
+  background: var(--danger);
+  color: #fff;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.01em;
+  margin-left: 6px;
+  vertical-align: middle;
+  box-shadow: 0 1px 4px #ef444440;
+}
+
+.chat-area {
+  border: 1px solid #e0e7ef;
+  border-radius: 12px;
+  padding: 12px;
+  max-height: 420px;
+  overflow: auto;
+  background: #f1f5fa;
+  margin-bottom: 10px;
+}
+
+.message {
+  margin: 7px 0;
+  padding: 12px 17px;
+  border-radius: 14px;
+  max-width: 80%;
+  font-size: 16px;
+  box-shadow: 0 1px 6px #60a5fa10;
+  transition: background 0.15s;
+}
+.me {
+  background: linear-gradient(90deg, #e0e7ff, #fee2e2);
+  align-self: flex-end;
+  color: #374151;
+}
+.them {
+  background: #f3f4f6;
+  align-self: flex-start;
+}
+
+footer, .small {
+  margin-top: 15px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.call-local, .call-remote {
+  width: 170px;
+  height: 130px;
+  background: #000;
+  border-radius: 13px;
+  overflow: hidden;
+  box-shadow: 0 2px 14px #dbeafe50;
+  border: 2.2px solid #c7d2fe;
+}
+
+.danger {
+  background: #fff5f5;
+  border: 1.1px solid #fecaca;
+  color: var(--danger);
+  padding: 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+::-webkit-scrollbar { width: 8px; background: #e0e7ef; }
+::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 7px; }
+
+/* Animated glowy effect for main CTAs */
+button:not([disabled]):hover {
+  box-shadow:
+    0 2px 16px #6366f128,
+    0 1.5px 8px #2563eb19,
+    0 1.5px 5px #4f46e529;
+}
+
+#main-left > div.flex > strong {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* Emoji + profile card styling */
+#profile-card {
+  background: #fafafe80;
+  box-shadow: 0 1px 7px #818cf81a;
+  border-radius: 13px;
+  border: 1.4px solid #a5b4fc33;
+  padding: 15px;
+  font-size: 15px;
+}
+
+#profile-emoji {
+  font-size: 28px;
+  vertical-align: middle;
+}
+
+hr {
+  border: none;
+  border-top: 1.5px solid #e0e7ef;
+  margin: 20px 0;
+  opacity: 0.7;
+}
+
+input[type="password"] {
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 820px) {
+  #app-container { flex-direction: column; max-width: 99vw; gap: 12px; }
+  .panel { min-height: 420px; padding: 12px 7vw; }
+}
+
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="left">
-    <div class="card header">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h2 class="h3">Tsedio</h2>
-        <div id="auth-info" class="small"></div>
+  <div id="app-container">
+    <!-- LEFT: Auth / Profile / Contacts -->
+    <div class="panel" style="flex:0.9; min-width:320px;">
+      <header class="app-header">
+        <h3>Tsedio</h3>
+        <div id="auth-controls">
+          <span id="user-display" class="small"></span>
+          <button id="btn-logout" class="hidden" onclick="logout()">Logout</button>
+        </div>
+      </header>
+
+      <!-- AUTH: changed to Anonymous (anyone) -->
+      <div id="auth-view">
+        <h3>Continue</h3>
+        <div class="small">Press the button to sign in anonymously (anyone).</div>
+        <div class="row" style="margin-top:12px;">
+          <button onclick="anonLogin()">Continue as Guest</button>
+        </div>
+        <div id="auth-error" class="small" style="color:#c00; margin-top:8px;"></div>
+      </div>
+
+      <!-- SIGNUP (kept but hidden; we do not use email signup) -->
+      <div id="signup-view" class="hidden">
+        <h3>Create account</h3>
+        <div class="small">(Not used — anonymous auth only)</div>
+      </div>
+
+      <!-- PROFILE SETUP -->
+      <div id="profile-setup" class="hidden">
+        <h3>Setup Profile</h3>
+        <div class="small">Choose a display name (this will be your public username) — emoji will be generated.</div>
+        <input id="profile-name" placeholder="Display name (like Ashish)">
+        <div class="row">
+          <button onclick="saveProfile()">Save Profile</button>
+        </div>
+        <div id="profile-error" class="small" style="color:#c00"></div>
+      </div>
+
+      <!-- CONTACTS & REQUESTS -->
+      <div id="main-left" class="hidden">
+        <div class="flex" style="justify-content:space-between">
+          <strong>Contacts</strong>
+          <div>
+            <button onclick="openFind()">Add Friend</button>
+            <button onclick="openRequests()">Requests</button>
+          </div>
+        </div>
+
+        <div id="contacts-list" style="margin-top:12px;"></div>
+
+        <hr>
+
+        <div class="flex" style="justify-content:space-between; align-items:center;">
+          <strong>My Profile</strong>
+          <button onclick="openProfile()">Edit</button>
+        </div>
+
+        <div id="profile-card" style="margin-top:8px; padding:8px; border-radius:8px; border:1px solid #eee;">
+          <div><span id="profile-emoji" style="font-size:22px"></span> <strong id="profile-display"></strong></div>
+          <div class="small" id="profile-uid"></div>
+          <div class="small">Blocked: <span id="blocked-count">0</span></div>
+          <div style="margin-top:8px;"><button onclick="copyUID()">Copy UID</button></div>
+        </div>
+      </div>
+
+      <!-- FIND FRIEND / SEND REQUEST -->
+      <div id="find-view" class="hidden">
+        <h3>Add friend by UID</h3>
+        <div class="small">Enter recipient UID (from their profile)</div>
+        <input id="find-uid" placeholder="Paste UID">
+        <button onclick="sendFriendRequest()">Send Request</button>
+        <div id="find-msg" class="small"></div>
+      </div>
+
+      <!-- REQUESTS -->
+      <div id="requests-view" class="hidden">
+        <h3>Incoming Requests</h3>
+        <div id="requests-list"></div>
       </div>
     </div>
 
-    <div class="card" id="profile-card" style="display:none">
-      <h3 class="h3">My Profile</h3>
-      <div style="display:flex;gap:12px;align-items:center">
-        <div>
-          <div id="p-name" style="font-weight:600;"></div>
-          <div class="small" style="margin-top:6px">UID: <span id="p-uid" style="word-break:break-all"></span></div>
-        </div>
-        <div style="margin-left:auto;display:flex;flex-direction:column;gap:8px">
-          <button class="btn-outline" onclick="copyUID()">Copy UID</button>
-          <button class="btn-outline" onclick="showEdit()">Edit</button>
+    <!-- RIGHT: Chat / Calls -->
+    <div class="panel" style="flex:1.6;">
+      <!-- Chat header -->
+      <div id="chat-controls" class="hidden">
+        <div class="flex" style="justify-content:space-between;">
+          <div>
+            <strong id="chat-with">Select contact</strong><div class="small" id="chat-with-uid"></div>
+          </div>
+          <div>
+            <button onclick="startCall()">Call</button>
+            <button onclick="blockUser()" id="btn-block">Block</button>
+            <button onclick="unblockUser()" id="btn-unblock" class="hidden">Unblock</button>
+          </div>
         </div>
       </div>
 
-      <div style="margin-top:12px">
-        <h4 style="margin:8px 0">Add friend by UID</h4>
-        <input id="add-uid" class="input" placeholder="Paste friend's UID"/>
-        <div style="height:8px"></div>
-        <button class="btn" onclick="sendFriendRequest()">Send Request</button>
-        <div id="send-result" class="small" style="margin-top:8px;color:green"></div>
-      </div>
-    </div>
+      <div id="chat-area" class="hidden">
+        <div class="chat-area flex-col" id="messages"></div>
 
-    <div class="card" id="auth-card">
-      <div id="setup-view">
-        <h3 class="h3">Enter your display name</h3>
-        <input id="setup-name" class="input" placeholder="Your name"/>
-        <div style="height:8px"></div>
-        <button class="btn" onclick="saveProfile()">Save</button>
-        <div id="auth-msg" class="small" style="margin-top:8px;color:#c00"></div>
-        <div class="small" style="margin-top:8px">App signs in anonymously in background — refresh-safe.</div>
+        <div style="margin-top:12px;" class="row">
+          <input id="message-input" placeholder="Type message...">
+          <button onclick="sendChatMessage()">Send</button>
+        </div>
+        <div class="small" id="unread-info"></div>
       </div>
-      <div id="edit-view" style="display:none">
-        <h3 class="h3">Edit name</h3>
-        <input id="edit-name" class="input"/>
-        <div style="height:8px"></div>
-        <div style="display:flex;gap:8px">
-          <button class="btn" onclick="saveEdit()">Save</button>
-          <button class="btn-outline" onclick="cancelEdit()">Cancel</button>
+
+      <!-- Calls UI -->
+      <div id="webrtc-ui" class="hidden" style="margin-top:12px;">
+        <div class="flex" style="gap:12px;">
+          <div>
+            <div class="small">Local</div>
+            <video id="localVideo" autoplay muted playsinline class="call-local"></video>
+          </div>
+          <div>
+            <div class="small">Remote</div>
+            <video id="remoteVideo" autoplay playsinline class="call-remote"></video>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <button id="end-call-btn" onclick="endCall()" class="danger">End Call</button>
         </div>
       </div>
-    </div>
 
-    <div class="card" id="requests-card" style="display:none">
-      <h3 class="h3">Friend Requests</h3>
-      <div id="requests-list"></div>
-      <div id="no-requests" class="small">No requests</div>
+      <!-- Incoming call modal -->
+      <div id="incoming-call" class="hidden" style="margin-top:12px; padding:12px; border-radius:8px; border:1px solid #eee;">
+        <div class="flex" style="justify-content:space-between;">
+          <div>
+            <strong id="incoming-from"></strong>
+            <div class="small" id="incoming-uid"></div>
+          </div>
+          <div>
+            <button onclick="acceptIncoming()">Accept</button>
+            <button onclick="rejectIncoming()" class="danger">Reject</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="system-log" style="margin-top:12px;" class="small"></div>
     </div>
   </div>
 
-  <div class="right">
-    <div class="card" id="contacts-card" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 class="h3">Contacts</h3>
-        <div>
-          <button class="btn-outline" onclick="refreshContacts()">Refresh</button>
-          <button class="btn-outline" onclick="openRequests()">Requests</button>
-        </div>
-      </div>
-      <div id="contacts-list" style="margin-top:12px"></div>
-      <div id="no-contacts" class="small">No contacts yet</div>
-    </div>
+  <!-- Firebase + App JS -->
+  <script type="module">
+    // ---------------------------
+    // Firebase Imports (modular)
+    // ---------------------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getDatabase, ref, set, push, onChildAdded, onValue, remove, update, get, child
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    <div class="card" id="chat-card" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <h3 id="chat-title" class="h3">Chat</h3>
-          <div class="small" id="chat-uid"></div>
-        </div>
-      </div>
+    // ---------------------------
+    // CONFIG - Replace with your keys
+    // ---------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyDTjjxt12p-0CMeey4EjKqiWAz9trGB0kQ",
+      authDomain: "tsedio-a122c.firebaseapp.com",
+      databaseURL: "https://tsedio-a122c-default-rtdb.firebaseio.com",
+      projectId: "tsedio-a122c",
+      storageBucket: "tsedio-a122c.firebasestorage.app",
+      messagingSenderId: "44533653921",
+      appId: "1:44533653921:web:07676dce93af9690136be0",
+      measurementId: "G-ZFZG6MBV1X"
+    };
 
-      <div class="chat-box" id="chat-box"></div>
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase(app);
 
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="chat-input" class="input" placeholder="Type message..." />
-        <button class="btn" onclick="sendMessage()">Send</button>
-      </div>
-    </div>
+    // ---------------------------
+    // Globals
+    // ---------------------------
+    let currentUser = null;
+    let myProfile = null;
+    let activeChatUid = null; // UID of currently selected contact
+    let listeners = []; // cleanup refs
+    let localStream = null;
+    let pc = null;
+    let callDocRef = null;
+    let currentCallId = null;
+    const configuration = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-    <div class="card">
-      <h4 class="h3">System log</h4>
-      <div id="system-log" class="log" style="height:14vh;overflow:auto"></div>
-    </div>
-  </div>
-</div>
+    // ---------------------------
+    // UI Helpers
+    // ---------------------------
+    const $ = id => document.getElementById(id);
+    function log(msg){ const el=$('system-log'); el.innerText = (new Date()).toLocaleTimeString() + " — " + msg + "\n" + el.innerText; }
 
-<div id="incoming-modal" class="modal" style="display:none">
-  <h4 id="incoming-title">Incoming call</h4>
-  <div style="margin-top:8px">
-    <button class="btn" onclick="acceptIncoming()">Accept</button>
-    <button class="btn-outline" onclick="declineIncoming()">Decline</button>
-  </div>
-</div>
+    // ---------------------------
+    // AUTH (Anonymous / anyone)
+    // ---------------------------
+    window.anonLogin = async ()=>{
+      try {
+        $('auth-error').innerText = "";
+        await signInAnonymously(auth);
+      } catch(e){
+        $('auth-error').innerText = e.message || String(e);
+      }
+    };
 
-<script type="module">
-/* Firebase imports (modular) */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getDatabase, ref, set, get, onChildAdded, onValue, push, remove, child
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    window.logout = async ()=>{
+      await signOut(auth);
+      location.reload();
+    };
 
-/* ====== Change config if needed ====== */
-const firebaseConfig = {
-  apiKey: "AIzaSyDTjjxt12p-0CMeey4EjKqiWAz9trGB0kQ",
-  authDomain: "tsedio-a122c.firebaseapp.com",
-  databaseURL: "https://tsedio-a122c-default-rtdb.firebaseio.com",
-  projectId: "tsedio-a122c",
-  storageBucket: "tsedio-a122c.appspot.com",
-  messagingSenderId: "44533653921",
-  appId: "1:44533653921:web:07676dce93af9690136be0"
-};
+    // Auth state listener
+    onAuthStateChanged(auth, async user=>{
+      if (user){
+        currentUser = user;
+        // for anonymous users email is null; show uid
+        $('user-display').innerText = user.email ? user.email : `UID: ${user.uid}`;
+        $('btn-logout').classList.remove('hidden');
+        $('auth-view').classList.add('hidden');
+        $('signup-view').classList.add('hidden');
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+        // ensure user record exists in users list for discoverability
+        await set(ref(db, `users/${user.uid}`), { uid: user.uid, createdAt: Date.now() });
 
-/* ====== App state ====== */
-let firebaseUser = null;   // firebase auth user
-let me = null;             // my profile { uid, name }
-let currentChatPeer = null; // uid of chat peer
-let currentChatUnsubscriber = null; // Unsubscribe function for the chat listener
+        // check profile
+        const profSnap = await get(child(ref(db), `profiles/${user.uid}`));
+        if (!profSnap.exists()){
+          // show profile setup
+          $('profile-setup').classList.remove('hidden');
+        } else {
+          myProfile = profSnap.val();
+          initMainUI();
+        }
+      } else {
+        currentUser = null;
+        myProfile = null;
+        $('user-display').innerText = "";
+        $('btn-logout').classList.add('hidden');
+        $('auth-view').classList.remove('hidden');
+        $('main-left').classList.add('hidden');
+        $('chat-controls').classList.add('hidden');
+        $('chat-area').classList.add('hidden');
+      }
+    });
 
-/* ====== Helpers ====== */
-const $ = id => document.getElementById(id);
-function log(msg){
-  const el = $('system-log');
-  el.innerText = (new Date()).toLocaleTimeString() + " — " + msg + "\n" + el.innerText;
-}
-
-/* ====== Anonymous sign-in ====== */
-signInAnonymously(auth).catch(e=> {
-  log("Sign-in error: " + (e.code||"") + " " + (e.message||""));
-  $('auth-msg').innerText = "Sign-in failed: " + (e.message||e.code||'');
-});
-
-onAuthStateChanged(auth, async user => {
-  if(user){
-    firebaseUser = user;
-    log("Signed in: " + user.uid);
-    $('auth-info').innerText = "UID: " + user.uid;
-    // check profile
-    const profSnap = await get(child(ref(db), `profiles/${user.uid}`));
-    if(profSnap.exists()){
-      me = profSnap.val();
-      initAfterProfile();
-    } else {
-      // show setup UI
-      $('profile-card').style.display = 'none';
-      $('requests-card').style.display = 'none';
-      $('contacts-card').style.display = 'none';
-      $('auth-card').style.display = 'block';
+    // ---------------------------
+    // PROFILE
+    // ---------------------------
+    const EMOJIS = ["😄","😎","🤖","🔥","🌟","🎯","💡","🧠","🚀","🎵","🍀","🌈","🐾","🌻","⚡"];
+    function genEmoji(name){
+      if(!name) return EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+      // stable pick by char codes
+      let s=0; for(let ch of name){ s+=ch.charCodeAt(0); } return EMOJIS[s % EMOJIS.length];
     }
-  } else {
-    log("Signed out");
-  }
-});
 
-/* ====== Save profile (first time) ====== */
-window.saveProfile = async () => {
-  const name = $('setup-name').value.trim();
-  if(!name) { $('auth-msg').innerText = "Enter name"; return; }
-  const uid = firebaseUser.uid;
-  me = { uid, name };
-  await set(ref(db, `profiles/${uid}`), me);
-  log("Profile saved: " + name);
-  initAfterProfile();
-};
+    window.saveProfile = async ()=>{
+      const name = $('profile-name').value.trim();
+      if (!name) { $('profile-error').innerText = "Enter a display name"; return; }
+      $('profile-error').innerText = "";
+      const profile = { displayName: name, emoji: genEmoji(name), createdAt: Date.now(), blocked: {} };
+      await set(ref(db, `profiles/${currentUser.uid}`), profile);
+      myProfile = profile;
+      initMainUI();
+    };
 
-/* ====== Edit profile functions ====== */
-window.showEdit = () => {
-  $('auth-card').style.display = 'block';
-  $('setup-view').style.display = 'none';
-  $('edit-view').style.display = 'block';
-  $('edit-name').value = me.name;
-};
-window.saveEdit = async () => {
-  const newName = $('edit-name').value.trim();
-  if(!newName) return alert("Enter a name");
-  await set(ref(db, `profiles/${me.uid}/name`), newName); // simple set
-  me.name = newName;
-  $('p-name').innerText = me.name;
-  $('edit-view').style.display = 'none';
-  $('auth-card').style.display = 'none';
-};
-window.cancelEdit = () => {
-  $('edit-view').style.display = 'none';
-  $('setup-view').style.display = 'none';
-  $('auth-card').style.display = 'none';
-};
+    function openProfile(){
+      $('profile-setup').classList.remove('hidden');
+      $('profile-name').value = myProfile.displayName || "";
+    }
 
-/* ====== After profile is ready ====== */
-function initAfterProfile(){
-  // show profile & lists
-  $('auth-card').style.display = 'none';
-  $('profile-card').style.display = 'block';
-  $('requests-card').style.display = 'block';
-  $('contacts-card').style.display = 'block';
-  $('p-name').innerText = me.name;
-  $('p-uid').innerText = me.uid;
-  $('auth-info').innerText = me.name + " • " + me.uid;
-  attachRequestsListener();
-  attachContactsListener();
-}
+    function copyUID(){
+      navigator.clipboard?.writeText(currentUser.uid);
+      alert("UID copied: " + currentUser.uid);
+    }
 
-/* ====== Copy UID ====== */
-window.copyUID = async ()=> {
-  try{ await navigator.clipboard.writeText(me.uid); alert("UID copied: " + me.uid); } catch(e){ prompt("Copy UID:", me.uid); }
-};
+    // ---------------------------
+    // MAIN UI INIT
+    // ---------------------------
+    function initMainUI(){
+      $('profile-setup').classList.add('hidden');
+      $('auth-view').classList.add('hidden');
+      $('signup-view').classList.add('hidden');
+      $('main-left').classList.remove('hidden');
+      $('chat-controls').classList.remove('hidden');
+      $('chat-area').classList.add('hidden'); // show when contact selected
+      updateProfileCard();
+      attachContactsListener();
+      attachRequestsListener();
+      attachIncomingCallListener();
+      log("Initialized main UI");
+    }
 
-/* ====== Friend request send ====== */
-window.sendFriendRequest = async () => {
-  const target = $('add-uid').value.trim();
-  if(!target){ $('send-result').innerText = "Enter UID"; return; }
-  if(target === me.uid){ $('send-result').innerText = "Can't add yourself"; setTimeout(()=>$('send-result').innerText='',2000); return; }
+    function updateProfileCard(){
+      $('profile-emoji').innerText = myProfile.emoji || "🙂";
+      // prefer display name; fallback to email or uid
+      const display = myProfile.displayName || (currentUser.email ? currentUser.email : `anon:${currentUser.uid}`);
+      $('profile-display').innerText = display;
+      $('profile-uid').innerText = "UID: " + currentUser.uid;
+      $('blocked-count').innerText = Object.keys(myProfile.blocked || {}).length;
+    }
 
-  // check target exists
-  const profSnap = await get(ref(db, `profiles/${target}`));
-  if(!profSnap.exists()){ $('send-result').innerText = "User not found"; setTimeout(()=>$('send-result').innerText='',2000); return; }
+    // ---------------------------
+    // FRIEND REQUESTS & CONTACTS
+    // ---------------------------
+    function attachRequestsListener(){
+      const reqRef = ref(db, `requests/${currentUser.uid}`);
+      // Warm clear UI
+      $('requests-list').innerHTML = "";
+      // on each incoming request push by others to requests/{recipientUid}/{pushId}
+      onChildAdded(reqRef, snap=>{
+        const data = snap.val();
+        const pushId = snap.key;
+        const el = document.createElement('div');
+        el.className = 'contact';
+        el.innerHTML = `<div><strong>${data.fromName || data.fromUid}</strong><div class="small">${data.fromUid}</div></div>
+                        <div class="row">
+                          <button onclick="acceptRequest('${pushId}','${data.fromUid}','${data.fromName || data.fromUid}')">Accept</button>
+                          <button onclick="rejectRequest('${pushId}')">Reject</button>
+                        </div>`;
+        $('requests-list').appendChild(el);
+      });
+    }
 
-  // write request under friend_requests/{target}/{from}
-  await set(ref(db, `friend_requests/${target}/${me.uid}`), { fromUid: me.uid, fromName: me.name, ts: Date.now() });
-  $('send-result').innerText = "Request sent";
-  setTimeout(()=>$('send-result').innerText='',2000);
-  $('add-uid').value = '';
-  log("Friend request sent to " + target);
-};
+    window.openRequests = ()=> {
+      $('requests-view').classList.toggle('hidden');
+      $('find-view').classList.add('hidden');
+    }
 
-/* ====== Incoming requests listener ====== */
-function attachRequestsListener(){
-  const node = ref(db, `friend_requests/${me.uid}`);
-  $('requests-list').innerHTML = '';
-  onChildAdded(node, snap => {
-    const data = snap.val();
-    if(!data) return;
-    addRequestUI(data.fromUid, data.fromName);
-  });
-}
+    window.openFind = ()=> {
+      $('find-view').classList.toggle('hidden');
+      $('requests-view').classList.add('hidden');
+      $('find-msg').innerText="";
+    }
 
-function addRequestUI(fromUid, fromName){
-  $('no-requests').style.display = 'none';
-  const list = $('requests-list');
-  const el = document.createElement('div');
-  el.id = 'req_' + fromUid;
-  el.style.display='flex'; el.style.justifyContent='space-between'; el.style.alignItems='center';
-  el.style.padding='10px'; el.style.marginBottom='8px'; el.style.border='1px solid #f1f5f9'; el.style.borderRadius='8px';
-  el.innerHTML = `<div><strong>${fromName}</strong><div class="small" style="margin-top:4px">${fromUid}</div></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn" onclick="acceptRequest('${fromUid}')">Accept</button>
-      <button class="btn-outline" onclick="declineRequest('${fromUid}')">Decline</button>
-    </div>`;
-  list.prepend(el);
-}
+    window.sendFriendRequest = async ()=>{
+      const targetUid = $('find-uid').value.trim();
+      if (!targetUid){ $('find-msg').innerText="Enter UID"; return; }
+      if (targetUid === currentUser.uid){ $('find-msg').innerText="You can't add yourself."; return; }
+      // create request at requests/{recipientUid}/{pushId}
+      const payload = { fromUid: currentUser.uid, fromName: myProfile.displayName || (`anon:${currentUser.uid}`), timestamp: Date.now() };
+      await push(ref(db, `requests/${targetUid}`), payload);
+      $('find-msg').innerText = "Request sent.";
+    };
 
-/* ====== Accept / Decline request ====== */
-window.acceptRequest = async (fromUid) => {
-  // get their profile
-  const profSnap = await get(ref(db, `profiles/${fromUid}`));
-  const name = profSnap.exists() ? profSnap.val().name : fromUid;
-  // add mutual contact entries
-  await set(ref(db, `contacts/${me.uid}/${fromUid}`), { uid: fromUid, name, since: Date.now() });
-  await set(ref(db, `contacts/${fromUid}/${me.uid}`), { uid: me.uid, name: me.name, since: Date.now() });
-  // remove request node
-  await remove(ref(db, `friend_requests/${me.uid}/${fromUid}`));
-  const el = $('req_' + fromUid);
-  if(el) el.remove();
-  log("Accepted friend: " + fromUid);
-};
+    window.acceptRequest = async (pushId, fromUid, fromName) => {
+      // Add to both users' contacts
+      await set(ref(db, `contacts/${currentUser.uid}/${fromUid}`), { uid: fromUid, name: fromName, since: Date.now() });
+      await set(ref(db, `contacts/${fromUid}/${currentUser.uid}`), { uid: currentUser.uid, name: myProfile.displayName || (`anon:${currentUser.uid}`), since: Date.now() });
+      // remove request
+      // pushId is the child key — original code assumed pushId variable as key
+      // find and remove the request entry matching pushId
+      // We used push() to create request; snapshot key is used in onChildAdded earlier.
+      await remove(ref(db, `requests/${currentUser.uid}/${pushId}`));
+      log("Accepted friend: " + fromUid);
+      // refresh contacts list will show it automatically
+    };
 
-window.declineRequest = async (fromUid) => {
-  await remove(ref(db, `friend_requests/${me.uid}/${fromUid}`));
-  const el = $('req_' + fromUid);
-  if(el) el.remove();
-  log("Declined request: " + fromUid);
-};
+    window.rejectRequest = async (pushId) => {
+      await remove(ref(db, `requests/${currentUser.uid}/${pushId}`));
+      log("Rejected request");
+    };
 
-window.openRequests = ()=> { document.querySelector('#requests-card').scrollIntoView({behavior:'smooth'}); };
+    function attachContactsListener(){
+      const cRef = ref(db, `contacts/${currentUser.uid}`);
+      const container = $('contacts-list');
+      container.innerHTML = "<div class='small'>Loading contacts...</div>";
+      onValue(cRef, snap=>{
+        container.innerHTML = "";
+        if (!snap.exists()){ container.innerHTML = "<div class='small'>No contacts</div>"; return; }
+        snap.forEach(childSnap=>{
+          const c = childSnap.val();
+          const uid = childSnap.key;
+          // skip if blocked
+          if (myProfile.blocked && myProfile.blocked[uid]) return;
+          const el = document.createElement('div');
+          el.className = 'contact';
+          el.innerHTML = `<div>
+                            <div style="font-weight:600;">${c.name || uid} <span class="small">(${uid===currentUser.uid?'me':''})</span></div>
+                            <div class="small">${new Date(c.since).toLocaleDateString()}</div>
+                          </div>
+                          <div style="display:flex; flex-direction:column; gap:6px;">
+                            <button onclick="openChat('${uid}','${(c.name||'')}')">Chat</button>
+                            <button onclick="startCall('${uid}')" style="background:#10b981">Call</button>
+                          </div>`;
+          container.appendChild(el);
+        });
+      });
+    }
 
-/* ====== Contacts (real-time) ====== */
-function attachContactsListener(){
-  const node = ref(db, `contacts/${me.uid}`);
-  $('contacts-list').innerHTML = '';
-  onChildAdded(node, snap => {
-    const data = snap.val();
-    if(!data) return;
-    addContactUI(data.uid, data.name);
-  });
-  // load existing contacts once
-  loadContactsOnce();
-}
+    // ---------------------------
+    // CHAT: per chat-room and unread counts
+    // chatId = sorted combination of two UIDs (smallest_first + '_' + largest)
+    // ---------------------------
+    function chatIdFor(a,b){
+      return (a<b) ? `${a}_${b}` : `${b}_${a}`;
+    }
 
-async function loadContactsOnce(){
-  const snap = await get(ref(db, `contacts/${me.uid}`));
-  $('contacts-list').innerHTML = '';
-  if(!snap.exists()){ $('no-contacts').style.display = 'block'; return; }
-  $('no-contacts').style.display = 'none';
-  const val = snap.val();
-  for(const k in val) addContactUI(val[k].uid, val[k].name);
-}
+    window.openChat = async (uid, name) => {
+      activeChatUid = uid;
+      $('chat-controls').classList.remove('hidden');
+      $('chat-area').classList.remove('hidden');
+      $('chat-with').innerText = name || uid;
+      $('chat-with-uid').innerText = uid;
+      $('messages').innerHTML = "";
+      $('unread-info').innerText = "";
+      $('incoming-call').classList.add('hidden');
 
-function addContactUI(uid, name){
-  const list = $('contacts-list');
-  if(document.getElementById('contact_'+uid)) return;
-  const el = document.createElement('div');
-  el.id = 'contact_' + uid;
-  el.className = 'contact';
-  el.innerHTML = `<div><div style="font-weight:600">${name}</div><div class="small" style="margin-top:4px">${uid}</div></div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <button class="btn-outline" onclick="openChat('${uid}','${name}')">Chat</button>
-    </div>`;
-  list.prepend(el);
-}
+      // check block status
+      const blocked = myProfile.blocked || {};
+      if (blocked[uid]) {
+        $('btn-block').classList.add('hidden');
+        $('btn-unblock').classList.remove('hidden');
+        $('message-input').disabled = true;
+      } else {
+        $('btn-block').classList.remove('hidden');
+        $('btn-unblock').classList.add('hidden');
+        $('message-input').disabled = false;
+      }
 
-/* ====== Chat ====== */
-// Function to generate a unique chat ID for two users.
-// It ensures the same ID is generated regardless of the user order.
-function chatIdFor(a, b) {
-  return [a, b].sort().join('_');
-}
+      // attach messages listener
+      const id = chatIdFor(currentUser.uid, uid);
+      const msgsRef = ref(db, `messages/${id}`);
+      onValue(msgsRef, snap=>{
+        $('messages').innerHTML = "";
+        if (!snap.exists()) return;
+        snap.forEach(child=>{
+          const m = child.val();
+          const div = document.createElement('div');
+          div.className = 'message ' + ((m.senderUid===currentUser.uid) ? 'me' : 'them');
+          div.innerText = `${m.senderName || m.senderEmail || m.senderUid}: ${m.text}`;
+          $('messages').appendChild(div);
+        });
+        // scroll
+        $('messages').scrollTop = $('messages').scrollHeight;
+      });
 
-function openChat(peerUid, peerName) {
-  // First, stop any existing chat listener to prevent duplicates.
-  if (currentChatUnsubscriber) {
-    currentChatUnsubscriber();
-    log("Stopped previous chat listener.");
-  }
+      // mark unread = 0 for me
+      const myUnreadRef = ref(db, `unread/${id}/${currentUser.uid}`);
+      set(myUnreadRef, 0);
+    };
 
-  currentChatPeer = peerUid;
-  $('chat-card').style.display = 'block';
-  $('chat-title').innerText = 'Chat — ' + peerName;
-  $('chat-uid').innerText = peerUid;
-  $('chat-box').innerHTML = '';
+    window.sendChatMessage = async ()=>{
+      if (!activeChatUid) { alert("Select a contact"); return; }
+      const text = $('message-input').value.trim();
+      if (!text) return;
+      // check block
+      if (myProfile.blocked && myProfile.blocked[activeChatUid]) { alert("Unblock to send"); return; }
 
-  const id = chatIdFor(me.uid, peerUid);
-  const node = ref(db, `chats/${id}`);
+      const id = chatIdFor(currentUser.uid, activeChatUid);
+      const payload = { text, senderUid: currentUser.uid, senderEmail: null, senderName: myProfile.displayName || (`anon:${currentUser.uid}`), ts: Date.now() };
+      await push(ref(db, `messages/${id}`), payload);
+      // increment unread for recipient
+      const otherUnreadRef = ref(db, `unread/${id}/${activeChatUid}`);
+      const snap = await get(otherUnreadRef);
+      const val = snap.exists() ? (snap.val() || 0) : 0;
+      set(otherUnreadRef, val + 1);
+      $('message-input').value = "";
+    };
 
-  // Use onChildAdded to listen for new messages.
-  // Store the un-subscribe function in currentChatUnsubscriber.
-  currentChatUnsubscriber = onChildAdded(node, snap => {
-    const m = snap.val();
-    if (!m) return;
-    
-    // Create the message element
-    const el = document.createElement('div');
-    el.className = 'message ' + (m.uid === me.uid ? 'me' : 'them');
-    el.innerText = m.name + ': ' + m.text;
-    
-    // Append the message and scroll to the bottom
-    $('chat-box').appendChild(el);
-    $('chat-box').scrollTop = $('chat-box').scrollHeight;
-  });
+    // show unread badges at contacts list
+    const attachUnreadListener = () => {
+      const myContactsRef = ref(db, `contacts/${currentUser.uid}`);
+      onValue(myContactsRef, snap=>{
+        // iterate contacts and check unread for each chat
+        const container = $('contacts-list');
+        // already updated via contacts listener; we will append badges after small delay
+        setTimeout(async ()=>{
+          const nodes = container.querySelectorAll('.contact');
+          snap.forEach(async cSnap => {
+            const otherUid = cSnap.key;
+            const id = chatIdFor(currentUser.uid, otherUid);
+            const unreadSnap = await get(ref(db, `unread/${id}/${currentUser.uid}`));
+            const n = unreadSnap.exists() ? (unreadSnap.val() || 0) : 0;
+            nodes.forEach(node=>{
+              // match by uid text in the node
+              if (node.innerText.includes(otherUid) || node.innerText.includes(cSnap.val().name)){
+                let bad = node.querySelector('.badge');
+                if (!bad && n>0){
+                  bad = document.createElement('span'); bad.className='badge'; bad.innerText = n;
+                  node.querySelector('div').appendChild(bad);
+                } else if (bad){
+                  if (n>0) bad.innerText = n; else bad.remove();
+                }
+              }
+            });
+          });
+        }, 200);
+      });
+    };
 
-  log(`Opened chat with ${peerName}`);
-}
+    // run unread listener when main UI ready
+    setInterval(()=>{ if (currentUser) attachUnreadListener(); }, 5000);
 
-window.sendMessage = async () => {
-  const txt = $('chat-input').value.trim();
-  if (!txt) return;
-  if (!currentChatPeer) {
-    alert("Open a chat with a contact first");
-    return;
-  }
+    // ---------------------------
+    // BLOCK / UNBLOCK
+    // ---------------------------
+    window.blockUser = async ()=>{
+      if (!activeChatUid) return;
+      myProfile.blocked = myProfile.blocked || {};
+      myProfile.blocked[activeChatUid] = Date.now();
+      await update(ref(db, `profiles/${currentUser.uid}`), { blocked: myProfile.blocked });
+      updateProfileCard();
+      $('btn-block').classList.add('hidden');
+      $('btn-unblock').classList.remove('hidden');
+      $('message-input').disabled = true;
+      log("Blocked " + activeChatUid);
+    };
 
-  const id = chatIdFor(me.uid, currentChatPeer);
-  // Use push() to add a new message with a unique key.
-  await push(ref(db, `chats/${id}`), { 
-    uid: me.uid, 
-    name: me.name, 
-    text: txt, 
-    ts: Date.now() 
-  });
-  
-  $('chat-input').value = '';
-};
+    window.unblockUser = async ()=>{
+      if (!activeChatUid) return;
+      myProfile.blocked = myProfile.blocked || {};
+      delete myProfile.blocked[activeChatUid];
+      await update(ref(db, `profiles/${currentUser.uid}`), { blocked: myProfile.blocked });
+      updateProfileCard();
+      $('btn-block').classList.remove('hidden');
+      $('btn-unblock').classList.add('hidden');
+      $('message-input').disabled = false;
+      log("Unblocked " + activeChatUid);
+    };
 
-/* ====== Utilities ====== */
-window.refreshContacts = ()=> loadContactsOnce();
+    // ---------------------------
+    // WEBRTC CALLING (Signaling via Realtime DB)
+    // - startCall(targetUid)  -> creates call doc at calls/{callId}
+    // - acceptIncoming -> reads offer, create answer, set to DB
+    // - exchange ICE candidates under calls/{callId}/callerCandidates and .../calleeCandidates
+    // ---------------------------
 
-/* Optionally remove profile on unload (commented out if you want persistent presence) */
-/*
-window.addEventListener('beforeunload', async ()=> {
-  try{ await remove(ref(db, `profiles/${me.uid}`)); } catch(e){}
-});
-*/
+    function attachIncomingCallListener(){
+      // Listen to calls node to see new entries directed to current user
+      const callsRef = ref(db, `calls`);
+      onChildAdded(callsRef, async snap=>{
+        // every call entry is expected to be under calls/{callId} with callerUid, calleeUid, status, sdp...
+        const c = snap.val();
+        const id = snap.key;
+        if (!c) return;
+        // if this call is for me and it's in "offer" state and I'm the callee:
+        if (c.calleeUid === currentUser.uid && c.status === 'offer'){
+          // show incoming UI
+          $('incoming-from').innerText = c.callerName || c.callerUid;
+          $('incoming-uid').innerText = c.callerUid;
+          $('incoming-call').classList.remove('hidden');
+          // store currentCallId for accept/reject
+          currentCallId = id;
+          log("Incoming call from " + c.callerUid);
+        }
+      });
+    }
 
-</script>
+    window.startCall = async (targetUid) => {
+      if (!targetUid) targetUid = activeChatUid;
+      if (!targetUid) { alert("Select contact to call"); return; }
+
+      // don't call if blocked
+      if (myProfile.blocked && myProfile.blocked[targetUid]) { alert("Cannot call blocked user"); return; }
+
+      // prepare call doc
+      const callRef = push(ref(db, 'calls'));
+      const callId = callRef.key;
+      currentCallId = callId;
+
+      // init local stream and pc
+      localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:true }).catch(e=>{ alert("Microphone/Camera permission needed"); throw e; });
+      $('localVideo').srcObject = localStream;
+      $('webrtc-ui').classList.remove('hidden');
+
+      pc = new RTCPeerConnection(configuration);
+      // add tracks
+      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+      // when remote track arrives
+      pc.ontrack = event => {
+        $('remoteVideo').srcObject = event.streams[0];
+      };
+      // ICE candidates => write to DB under callerCandidates
+      const callerCandidatesRef = ref(db, `calls/${callId}/callerCandidates`);
+      pc.onicecandidate = event => {
+        if (event.candidate){
+          push(callerCandidatesRef, event.candidate.toJSON());
+        }
+      };
+
+      // create offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      // create call entry
+      await set(callRef, {
+        callerUid: currentUser.uid,
+        callerName: myProfile.displayName || (`anon:${currentUser.uid}`),
+        calleeUid: targetUid,
+        status: 'offer',
+        sdp: offer.sdp,
+        createdAt: Date.now()
+      });
+
+      log("Call offer sent to " + targetUid);
+
+      // listen for answer and remote ICE
+      const callSnapRef = ref(db, `calls/${callId}`);
+      onValue(callSnapRef, async snap=>{
+        const val = snap.val();
+        if (!val) return;
+        // if answer arrives
+        if (val.status === 'answered' && val.answerSdp){
+          const remoteDesc = { type: 'answer', sdp: val.answerSdp };
+          await pc.setRemoteDescription(remoteDesc);
+          log("Remote description set (answer)");
+        }
+      });
+
+      // listen for callee ICE candidates
+      const calleeCandidatesRef = ref(db, `calls/${callId}/calleeCandidates`);
+      onChildAdded(calleeCandidatesRef, snap=>{
+        const cand = snap.val();
+        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
+      });
+    };
+
+    window.acceptIncoming = async ()=>{
+      if (!currentCallId) return;
+      $('incoming-call').classList.add('hidden');
+
+      const callRef = ref(db, `calls/${currentCallId}`);
+      const callSnap = await get(callRef);
+      if (!callSnap.exists()) { log("Call no longer exists"); return; }
+      const callData = callSnap.val();
+
+      // create local stream & pc
+      localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:true }).catch(e=>{ alert("Allow camera/mic"); throw e; });
+      $('localVideo').srcObject = localStream;
+      $('webrtc-ui').classList.remove('hidden');
+
+      pc = new RTCPeerConnection(configuration);
+      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+      pc.ontrack = event => { $('remoteVideo').srcObject = event.streams[0]; };
+
+      // ICE: calleeCandidates -> write
+      const calleeCandidatesRef = ref(db, `calls/${currentCallId}/calleeCandidates`);
+      pc.onicecandidate = event => {
+        if (event.candidate) push(calleeCandidatesRef, event.candidate.toJSON());
+      };
+
+      // set remote desc from offer
+      const offerDesc = { type:'offer', sdp: callData.sdp };
+      await pc.setRemoteDescription(offerDesc);
+
+      // create answer
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      // update call doc with answer
+      await update(callRef, { answerSdp: answer.sdp, status: 'answered' });
+
+      // listen for caller ICE
+      const callerCandidatesRef = ref(db, `calls/${currentCallId}/callerCandidates`);
+      onChildAdded(callerCandidatesRef, snap=>{
+        const cand = snap.val();
+        if (cand) pc.addIceCandidate(cand).catch(e=>console.warn(e));
+      });
+
+      log("Answered call " + currentCallId);
+    };
+
+    window.rejectIncoming = async ()=>{
+      if (!currentCallId) return;
+      await update(ref(db, `calls/${currentCallId}`), { status: 'rejected' });
+      $('incoming-call').classList.add('hidden');
+      log("Call rejected");
+      currentCallId = null;
+    };
+
+    window.endCall = async ()=>{
+      if (!currentCallId) return;
+      await update(ref(db, `calls/${currentCallId}`), { status: 'ended' });
+      cleanupCall();
+      log("Call ended");
+    };
+
+    async function cleanupCall(){
+      try{
+        if (pc){ pc.close(); pc = null; }
+        if (localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream = null; }
+        $('webrtc-ui').classList.add('hidden');
+        $('localVideo').srcObject = null;
+        $('remoteVideo').srcObject = null;
+        currentCallId = null;
+      } catch(e){ console.warn(e); }
+    }
+
+    // Also listen for changes to call status to cleanup on remote hangup/reject
+    const monitorCallsForCleanup = () => {
+      const callsRef = ref(db, 'calls');
+      onChildAdded(callsRef, snap=>{
+        const id = snap.key;
+        onValue(ref(db, `calls/${id}/status`), snap2=>{
+          const s = snap2.val();
+          if (s === 'ended' || s === 'rejected'){
+            if (currentCallId === id){
+              cleanupCall();
+              log("Remote ended/rejected call");
+            }
+          }
+        });
+      });
+    };
+    monitorCallsForCleanup();
+
+    // ---------------------------
+    // Incoming call accept via button, and more
+    // ---------------------------
+    window.rejectCall = window.rejectIncoming; // alias
+
+    // ---------------------------
+    // Misc utilities
+    // ---------------------------
+    function uidShort(u){ return u ? u.substr(0,6) : ''; }
+    // small heartbeat to refresh profile from DB (so blocked changes reflect quickly)
+    setInterval(async ()=>{
+      if (!currentUser) return;
+      const snap = await get(ref(db, `profiles/${currentUser.uid}`));
+      if (snap.exists()){
+        myProfile = snap.val();
+        updateProfileCard();
+      }
+    }, 5000);
+
+    // ---------------------------
+    // Initial small instructions in console and system-log
+    // ---------------------------
+    log("App loaded. Please continue as guest. Replace firebaseConfig with your keys and enable Anonymous Auth in Firebase console.");
+
+    // END of MODULE
+  </script>
 </body>
 </html>
