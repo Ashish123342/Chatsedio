@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Chat + Call App (Anonymous)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="auth-screen">
+  <div id="auth-container">
+    <h2>Welcome to Chat App</h2>
+    <p>Enter your name to get started</p>
+    <input type="text" id="name-input" placeholder="Your name" />
+    <div id="error-message"></div>
+    <button id="signin-btn">Sign In Anonymously</button>
+    <div id="auth-status"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <header>📞 Chat + Call App</header>
+  <div id="user-info">
+    <span id="user-name-display">Signing in...</span>
+    <button id="edit-profile-btn" style="margin-left:10px; padding:4px 8px; font-size:12px;">Edit</button>
+  </div>
+  <div id="tabs">
+    <button data-view="people" class="active">People</button>
+    <button data-view="friends">Friends</button>
+    <button data-view="chats">Chats</button>
+  </div>
+  <div id="people" class="view active"></div>
+  <div id="friends" class="view"></div>
+  <div id="chats" class="view"></div>
+</div>
+
+<div id="chat-box" style="display:none;">
+  <header id="chat-header" style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:var(--primary); color:#fff;">
+    <span id="back-btn" style="cursor:pointer;">←</span>
+    <span id="chat-with-name"></span>
+    <span style="width:24px;"></span>
+  </header>
+  <div id="messages"></div>
+  <div id="send-box">
+    <input id="msgInput" placeholder="Type a message..." />
+    <button id="sendBtn">➤</button>
+  </div>
+</div>
+
+<div id="call-overlay">
+  <h2 id="call-status">Calling...</h2>
+  <video id="remoteVideo" autoplay playsinline></video>
+  <video id="localVideo" autoplay playsinline muted></video>
+  <div>
+    <button id="answerBtn" style="background:green;">Answer</button>
+    <button id="rejectBtn" style="background:red;">Reject</button>
+    <button id="endBtn" style="background:red; display:none;">End</button>
+  </div>
+</div>
+
+<div id="edit-profile-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:white; padding:20px; border-radius:8px; width:300px;">
+    <h3>Edit Profile</h3>
+    <input type="text" id="edit-name-input" placeholder="Your name" />
+    <div style="margin-top:15px; display:flex; justify-content:space-between;">
+      <button id="save-profile-btn">Save</button>
+      <button id="cancel-edit-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="auth.js"></script>
+<script type="module" src="app.js"></script>
+<script type="module" src="chat.js"></script>
+<script type="module" src="webrtc.js"></script>
+</body>
+</html>
