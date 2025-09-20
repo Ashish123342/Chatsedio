@@ -1,6 +1,7 @@
+// auth.js - Fixed version
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getDatabase, ref, set, get, onValue, off } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
 // Firebase Config
 const firebaseConfig = {
@@ -20,6 +21,7 @@ const db = getDatabase(app);
 
 let currentUser = null;
 let userName = null;
+let userDataListener = null;
 
 // Check if user was previously logged in
 window.addEventListener('DOMContentLoaded', () => {
@@ -65,7 +67,8 @@ document.getElementById('signin-btn').addEventListener('click', async () => {
     await set(ref(db, `users/${userCredential.user.uid}`), {
       uid: userCredential.user.uid,
       name: userName,
-      online: true
+      online: true,
+      lastSeen: Date.now()
     });
 
     // Save to localStorage for auto-login
@@ -88,6 +91,37 @@ document.getElementById('signin-btn').addEventListener('click', async () => {
     errorElement.textContent = `Sign in failed: ${error.message}`;
     authStatus.innerHTML = '';
     document.getElementById('signin-btn').disabled = false;
+  }
+});
+
+// Add sign out functionality
+document.getElementById('signout-btn').addEventListener('click', async () => {
+  try {
+    // Update user status to offline
+    if (currentUser) {
+      await set(ref(db, `users/${currentUser.uid}/online`), false);
+      await set(ref(db, `users/${currentUser.uid}/lastSeen`), Date.now());
+    }
+    
+    // Sign out from Firebase
+    await signOut(auth);
+    
+    // Clear local storage
+    localStorage.removeItem('userUid');
+    localStorage.removeItem('userName');
+    
+    // Remove any active listeners
+    if (userDataListener) {
+      off(userDataListener);
+      userDataListener = null;
+    }
+    
+    // Show auth screen
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    
+  } catch (error) {
+    console.error('Sign out error:', error);
   }
 });
 
@@ -127,14 +161,28 @@ onAuthStateChanged(auth, async (user) => {
     // If we don't have a username yet, try to get it from the database
     if (!userName) {
       try {
-        const userSnapshot = await get(ref(db, `users/${user.uid}`));
-        if (userSnapshot.exists()) {
-          const userData = userSnapshot.val();
-          userName = userData.name;
-          document.getElementById('user-name-display').textContent = `Name: ${userName}`;
-          localStorage.setItem('userUid', user.uid);
-          localStorage.setItem('userName', userName);
+        // Remove any existing listener
+        if (userDataListener) {
+          off(userDataListener);
         }
+        
+        // Set up a new listener for user data
+        userDataListener = ref(db, `users/${user.uid}`);
+        onValue(userDataListener, (snapshot) => {
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            userName = userData.name;
+            document.getElementById('user-name-display').textContent = `Name: ${userName}`;
+            localStorage.setItem('userUid', user.uid);
+            localStorage.setItem('userName', userName);
+            
+            // Update online status
+            set(ref(db, `users/${user.uid}/online`), true);
+            set(ref(db, `users/${user.uid}/lastSeen`), Date.now());
+          }
+        }, {
+          onlyOnce: true // Only get the data once, not continuously
+        });
       } catch (error) {
         console.error('Error getting user data:', error);
       }
@@ -153,6 +201,12 @@ onAuthStateChanged(auth, async (user) => {
     // Clear saved credentials
     localStorage.removeItem('userUid');
     localStorage.removeItem('userName');
+    
+    // Remove listener
+    if (userDataListener) {
+      off(userDataListener);
+      userDataListener = null;
+    }
   }
 });
 
